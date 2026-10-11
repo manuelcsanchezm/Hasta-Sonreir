@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0b2b3f">
+<title>Hasta Sonre&iacute;r</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hasta Sonreir">
+<style>
+  :root{
+    --cielo1:#0b2b3f; --cielo2:#14455f;
+    --tur:#0eb3a6; --nar:#f5821f; --azul:#1680b8;
+    --ok:#2fd48f; --mal:#f0604f; --amb:#f5b23f;
+    --tx:#eaf4fa; --tx2:#9fb9c8;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+  html,body{height:100%;overflow:hidden;}
+  body{background:var(--cielo1);color:var(--tx);font-family:var(--sans);
+    user-select:none;-webkit-user-select:none;touch-action:manipulation;}
+  #cv{display:block;width:100vw;height:100vh;touch-action:none;}
+
+  /* marcador */
+  .hud{position:fixed;left:0;right:0;top:0;z-index:3;pointer-events:none;
+    display:flex;align-items:flex-start;justify-content:space-between;
+    padding:calc(12px + env(safe-area-inset-top)) 16px 0;}
+  .hud[hidden]{display:none!important;}
+  .hud .der{text-align:right;}
+  .hud .pts{font-size:27px;font-weight:800;line-height:1.05;
+    font-variant-numeric:tabular-nums;text-shadow:0 2px 8px rgba(0,0,0,.5);}
+  .hud .et{font-size:10.5px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.9px;color:var(--tx2);margin-top:2px;}
+  .hud .vidas{display:flex;gap:5px;justify-content:flex-end;height:22px;align-items:center;}
+  .hud .vidas svg{width:21px;height:21px;}
+  .hud .vidas svg.ida{opacity:.28;}
+
+  .capa{position:fixed;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:14px;
+    padding:calc(22px + env(safe-area-inset-top)) 24px calc(22px + env(safe-area-inset-bottom));
+    text-align:center;background:rgba(7,26,38,.9);backdrop-filter:blur(3px);z-index:5;}
+  .capa[hidden]{display:none!important;}
+  .capa h1{font-size:clamp(28px,9vw,44px);font-weight:800;letter-spacing:-.5px;
+    background:linear-gradient(100deg,var(--tur),var(--nar));
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .capa h2{font-size:clamp(20px,6vw,27px);font-weight:800;}
+  .capa p{font-size:15px;line-height:1.55;color:var(--tx2);max-width:330px;}
+  .capa p b{color:var(--tx);}
+  .regla{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
+    border-radius:16px;padding:14px 16px;max-width:330px;width:100%;}
+  .regla .r{display:flex;align-items:center;gap:11px;font-size:14px;text-align:left;}
+  .regla .r + .r{margin-top:10px;}
+  .regla .r svg{flex:0 0 auto;}
+  .btn{background:linear-gradient(135deg,var(--azul),var(--tur));color:#fff;border:none;
+    border-radius:99px;padding:15px 40px;font:inherit;font-size:17px;font-weight:800;
+    box-shadow:0 6px 20px rgba(14,179,166,.35);cursor:pointer;
+    transition:transform .14s ease;}
+  .btn:active{transform:scale(.95);}
+  .btn.sec{background:none;border:1.5px solid rgba(255,255,255,.3);box-shadow:none;
+    padding:12px 28px;font-size:15px;}
+  .marc{display:flex;gap:26px;}
+  .marc div{min-width:86px;}
+  .marc .k{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--tx2);}
+  .marc .v{font-size:31px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;}
+  .nuevo{color:var(--amb);font-weight:800;font-size:14px;}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<canvas id="cv"></canvas>
+
+<!-- ============ marcador (HTML sobre el lienzo) ============ -->
+<div class="hud" id="hud" hidden>
+  <div class="izq">
+    <div class="pts" id="h-pts">0</div>
+    <div class="et">Puntos</div>
+  </div>
+  <div class="der">
+    <div class="vidas" id="h-vidas"></div>
+    <div class="et" id="h-nivel">Nivel 1</div>
+  </div>
+</div>
+
+<!-- ============ portada ============ -->
+<div class="capa" id="c-menu">
+  <h1>Hasta Sonre&iacute;r</h1>
+  <p>La cara te dice c&oacute;mo va la dosis.<br><b>Compl&eacute;tala para mejorar.</b></p>
+  <div class="regla">
+    <div class="r"><svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"
+        fill="none" stroke="#f0604f" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9.2"/><path d="M8.2 7.9l2.6 1.1M15.8 7.9l-2.6 1.1" stroke-width="1.5"/>
+        <path d="M9.7 10.4v.01M14.3 10.4v.01" stroke-width="2.4"/>
+        <path d="M8.6 15.6a4.4 4.4 0 016.8 0"/></svg>
+      <span>Si la cara <b>no sonr&iacute;e</b>, falta dosis:<br><b>toca la c&aacute;psula</b> para tomarla.</span></div>
+    <div class="r"><svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"
+        fill="none" stroke="#2fd48f" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9.2"/>
+        <path d="M8.6 10.6a1.7 1.7 0 012.8 0M12.6 10.6a1.7 1.7 0 012.8 0"/>
+        <path d="M8 13a5 5 0 008 0"/></svg>
+      <span>Si <b>ya sonr&iacute;e</b>, la dosis est&aacute; completa:<br><b>d&eacute;jala pasar</b>. Tomar de m&aacute;s tambi&eacute;n hace mal.</span></div>
+  </div>
+  <button class="btn" id="b-jugar">Jugar</button>
+  <p style="font-size:12.5px;">R&eacute;cord: <b id="rec-menu">0</b></p>
+</div>
+
+<!-- ============ fin ============ -->
+<div class="capa" id="c-fin" hidden>
+  <h2 id="fin-tit">Se acab&oacute;</h2>
+  <div class="marc">
+    <div><div class="k">Puntos</div><div class="v" id="fin-pts">0</div></div>
+    <div><div class="k">R&eacute;cord</div><div class="v" id="fin-rec">0</div></div>
+  </div>
+  <p class="nuevo" id="fin-nuevo" hidden>&iexcl;Nuevo r&eacute;cord!</p>
+  <p id="fin-txt"></p>
+  <button class="btn" id="b-otra">Otra vez</button>
+  <button class="btn sec" id="b-menu">Volver al inicio</button>
+</div>
+
+<script>
+"use strict";
+
+/* ===================== lienzo ===================== */
+const cv  = document.getElementById("cv");
+const ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+
+function medir(){
+  DPR = Math.min(window.devicePixelRatio || 1, 2.5);
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width  = Math.round(W * DPR);
+  cv.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+addEventListener("resize", medir);
+medir();
+
+/* ===================== ajustes del juego ===================== */
+const REC_KEY = "hastasonreir-record";
+const leerRecord = () => { try { return parseInt(localStorage.getItem(REC_KEY) || "0", 10) || 0; } catch(_){ return 0; } };
+const grabarRecord = v => { try { localStorage.setItem(REC_KEY, String(v)); } catch(_){ } };
+
+const VIDAS = 3;
+const vibrar = ms => { try { if(navigator.vibrate) navigator.vibrate(ms); } catch(_){ } };
+const suave  = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ===================== estado ===================== */
+const G = {
+  fase: "menu",          // menu | jugando | fin
+  pts: 0, record: leerRecord(), vidas: VIDAS, nivel: 1,
+  necesita: 3, tiene: 0,     // dosis en curso
+  dosisOk: 0,                // dosis completadas (la "mejora")
+  mejora: 0,                 // 0..1, qué tan claro está el ambiente
+  racha: 0, mejorRacha: 0,
+  capsulas: [], chispas: [], flotantes: [],
+  tSpawn: 0, intervalo: 1500,
+  pausaDosis: 0,             // ms de respiro al completar una dosis
+  malestar: 0,               // ms que la cara queda descompuesta por tomar de más
+  sacudida: 0, destello: 0, destelloColor: "#fff",
+  t: 0
+};
+
+/* ===================== geometría de la escena ===================== */
+/* la cara vive arriba; las cápsulas suben desde abajo hacia ella */
+const caraY  = () => Math.max(110, H * 0.21);
+const caraR  = () => Math.min(W * 0.17, 74);
+const bocaY  = () => caraY() + caraR() * 0.55;   // línea donde la cápsula "entra"
+const pisoY  = () => H + 60;
+
+/* ===================== caras ===================== */
+/* nivel 0..4 según el avance de la dosis; 4 = completa */
+function colorCara(n){
+  return n === -1 ? "#c86fd8"                       // descompuesta: morado, distinto a todo
+       : n === 0 ? "#f0604f" : n === 1 ? "#f5b23f" : n === 2 ? "#9fb9c8"
+       : n === 3 ? "#58d6cb" : "#2fd48f";
+}
+function dibujaCara(x, y, r, n, late){
+  const c = colorCara(n);
+  const e = late ? 1 + Math.sin(G.t / 90) * 0.045 : 1;
+  ctx.save();
+  ctx.translate(x, y); ctx.scale(e, e);
+
+  /* halo */
+  const halo = ctx.createRadialGradient(0, 0, r * 0.75, 0, 0, r * 1.75);
+  halo.addColorStop(0, c + "44"); halo.addColorStop(1, c + "00");
+  ctx.fillStyle = halo;
+  ctx.beginPath(); ctx.arc(0, 0, r * 1.75, 0, 7); ctx.fill();
+
+  /* disco */
+  ctx.fillStyle = "rgba(255,255,255,.06)";
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill();
+  ctx.lineWidth = Math.max(3, r * 0.075); ctx.strokeStyle = c;
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.stroke();
+
+  ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = c;
+
+  /* cejas caídas solo en el peor estado */
+  if(n === 0){
+    ctx.lineWidth = Math.max(2.5, r * 0.062);
+    ctx.beginPath();
+    ctx.moveTo(-r*0.46, -r*0.40); ctx.lineTo(-r*0.17, -r*0.26);
+    ctx.moveTo( r*0.46, -r*0.40); ctx.lineTo( r*0.17, -r*0.26);
+    ctx.stroke();
+  }
+
+  /* ojos en aspa: tomó de más */
+  if(n === -1){
+    ctx.lineWidth = Math.max(3, r * 0.085);
+    const o = r * 0.14;
+    ctx.beginPath();
+    ctx.moveTo(-r*0.33-o, -r*0.14-o); ctx.lineTo(-r*0.33+o, -r*0.14+o);
+    ctx.moveTo(-r*0.33+o, -r*0.14-o); ctx.lineTo(-r*0.33-o, -r*0.14+o);
+    ctx.moveTo( r*0.33-o, -r*0.14-o); ctx.lineTo( r*0.33+o, -r*0.14+o);
+    ctx.moveTo( r*0.33+o, -r*0.14-o); ctx.lineTo( r*0.33-o, -r*0.14+o);
+    ctx.stroke();
+  }
+  /* ojos: arqueados cuando la dosis está completa */
+  else if(n === 4){
+    ctx.lineWidth = Math.max(2.8, r * 0.072);
+    ctx.beginPath();
+    ctx.arc(-r*0.33, -r*0.10, r*0.16, Math.PI, 0);
+    ctx.arc( r*0.33, -r*0.10, r*0.16, Math.PI, 0);
+    ctx.stroke();
+  } else {
+    ctx.lineWidth = Math.max(4, r * 0.105);
+    ctx.beginPath();
+    ctx.moveTo(-r*0.33, -r*0.14); ctx.lineTo(-r*0.33, -r*0.13);
+    ctx.moveTo( r*0.33, -r*0.14); ctx.lineTo( r*0.33, -r*0.13);
+    ctx.stroke();
+  }
+
+  /* boca */
+  ctx.lineWidth = Math.max(3, r * 0.082);
+  ctx.beginPath();
+  if(n === -1){                                                                        // boca ondulada
+    const a = r * 0.30, y0 = r * 0.36, h = r * 0.11;
+    ctx.moveTo(-a, y0);
+    ctx.bezierCurveTo(-a*0.5, y0 - h, -a*0.5, y0 + h, 0, y0);
+    ctx.bezierCurveTo( a*0.5, y0 - h,  a*0.5, y0 + h, a, y0);
+  }
+  else if(n === 0)  ctx.arc(0,  r*0.52, r*0.30, Math.PI*1.12, Math.PI*1.88);          // muy triste
+  else if(n === 1)  ctx.arc(0,  r*0.46, r*0.28, Math.PI*1.18, Math.PI*1.82);          // triste
+  else if(n === 2){ ctx.moveTo(-r*0.26, r*0.26); ctx.lineTo(r*0.26, r*0.26); }        // recta
+  else if(n === 3)  ctx.arc(0,  r*0.12, r*0.30, Math.PI*0.17, Math.PI*0.83);          // leve sonrisa
+  else              ctx.arc(0,  r*0.06, r*0.36, Math.PI*0.10, Math.PI*0.90);          // sonrisa
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* ===================== cápsula ===================== */
+function dibujaCapsula(x, y, r, giro, alfa){
+  ctx.save();
+  ctx.globalAlpha = alfa == null ? 1 : alfa;
+  ctx.translate(x, y); ctx.rotate(giro);
+  const w = r * 1.15, h = r * 2.1, rr = w / 2;
+
+  ctx.beginPath();
+  ctx.moveTo(-w/2, -h/2 + rr);
+  ctx.arc(0, -h/2 + rr, rr, Math.PI, 0);
+  ctx.lineTo(w/2, h/2 - rr);
+  ctx.arc(0, h/2 - rr, rr, 0, Math.PI);
+  ctx.closePath();
+  ctx.save(); ctx.clip();
+  ctx.fillStyle = "#12c4b5"; ctx.fillRect(-w, -h, w*2, h);        // mitad turquesa
+  ctx.fillStyle = "#f5821f"; ctx.fillRect(-w,  0, w*2, h);        // mitad naranja
+  /* brillo */
+  ctx.fillStyle = "rgba(255,255,255,.42)";
+  ctx.beginPath(); ctx.ellipse(-w*0.22, -h*0.2, w*0.1, h*0.22, -0.2, 0, 7); ctx.fill();
+  ctx.restore();
+
+  ctx.lineWidth = Math.max(1.6, r * 0.1);
+  ctx.strokeStyle = "rgba(255,255,255,.75)";
+  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-w/2, 0); ctx.lineTo(w/2, 0); ctx.stroke();
+  ctx.restore();
+}
+
+/* ===================== partículas y textos ===================== */
+function chispazo(x, y, color, n){
+  if(suave) return;
+  for(let i = 0; i < n; i++){
+    const a = Math.random() * Math.PI * 2, v = 1.6 + Math.random() * 3.4;
+    G.chispas.push({ x, y, vx: Math.cos(a)*v, vy: Math.sin(a)*v - 1,
+                     r: 2 + Math.random()*3, vida: 1, color });
+  }
+}
+function flotante(x, y, txt, color){
+  G.flotantes.push({ x, y, txt, color, vida: 1 });
+}
+
+/* ===================== ciclo de dosis ===================== */
+function nuevaDosis(){
+  G.tiene = 0;
+  G.necesita = 2 + Math.min(2, Math.floor(G.nivel / 3));   // 2, 3 o 4 porciones
+  G.pausaDosis = 0;
+}
+function dosisCompleta(){ return G.tiene >= G.necesita; }
+
+/* nivel de cara: -1 = descompuesta por tomar de más; 0..4 según el avance */
+function nivelCara(){
+  if(G.malestar > 0) return -1;
+  if(dosisCompleta()) return 4;
+  const p = G.tiene / G.necesita;
+  return p === 0 ? 0 : p < 0.5 ? 1 : p < 1 ? 2 : 3;
+}
+
+/* ===================== acciones ===================== */
+function acierto(c){
+  G.tiene++;
+  G.racha++;
+  if(G.racha > G.mejorRacha) G.mejorRacha = G.racha;
+  const bonus = Math.min(10, Math.floor(G.racha / 4) * 2);
+  G.pts += 10 + bonus;
+  chispazo(c.x, c.y, "#12c4b5", 14);
+  flotante(c.x, c.y - 14, "+" + (10 + bonus), "#2fd48f");
+  vibrar(18);
+
+  if(dosisCompleta()){
+    G.dosisOk++;
+    G.pts += 50;
+    G.mejora = Math.min(1, G.mejora + 0.1);
+    G.destello = 1; G.destelloColor = "#2fd48f";
+    flotante(W/2, caraY() + caraR() + 34, "¡Dosis completa!  +50", "#2fd48f");
+    chispazo(W/2, caraY(), "#2fd48f", 26);
+    vibrar([18, 50, 30]);
+    G.pausaDosis = 1100;                      // respiro antes de la siguiente toma
+    if(G.dosisOk % 2 === 0) subirNivel();
+  }
+}
+function error(x, y, motivo, deMas){
+  G.vidas--;
+  G.racha = 0;
+  /* pasarse hace MÁS daño que quedarse corto: la dosis justa es justa por los dos lados */
+  G.mejora = Math.max(0, G.mejora - (deMas ? 0.12 : 0.06));
+  G.sacudida = 1; G.destello = 1; G.destelloColor = "#f0604f";
+  chispazo(x, y, "#f0604f", deMas ? 22 : 16);
+  flotante(x, y - 14, motivo, "#f0604f");
+  vibrar(deMas ? [60, 40, 120] : 150);
+  if(deMas){
+    G.malestar = 1400;                   // la cara se descompone un rato
+    flotante(W/2, caraY() + caraR() + 128, "La dosis ya estaba completa", "#f5b23f");
+  }
+  if(G.vidas <= 0) terminar();
+}
+function subirNivel(){
+  G.nivel++;
+  G.intervalo = Math.max(620, 1500 - (G.nivel - 1) * 85);
+  flotante(W/2, H * 0.52, "Nivel " + G.nivel, "#f5b23f");
+}
+
+/* ===================== bucle ===================== */
+let ultimo = 0;
+function paso(ts){
+  const dt = Math.min(48, ts - (ultimo || ts));
+  ultimo = ts;
+  G.t += dt;
+
+  if(G.fase === "jugando") actualizar(dt);
+  pintar();
+  requestAnimationFrame(paso);
+}
+
+function actualizar(dt){
+  /* respiro entre dosis */
+  if(G.pausaDosis > 0){
+    G.pausaDosis -= dt;
+    if(G.pausaDosis <= 0) nuevaDosis();
+  }
+
+  /* aparición de cápsulas */
+  G.tSpawn -= dt;
+  if(G.tSpawn <= 0){
+    G.tSpawn = G.intervalo * (0.78 + Math.random() * 0.5);
+    const r = Math.min(W * 0.065, 27);
+    const margen = r * 2.4;
+    G.capsulas.push({
+      x: margen + Math.random() * (W - margen * 2),
+      y: pisoY(),
+      r,
+      vy: -(0.105 + G.nivel * 0.011) * (0.9 + Math.random() * 0.25),
+      giro: (Math.random() - 0.5) * 0.5,
+      vgiro: (Math.random() - 0.5) * 0.0022,
+      viva: true, alfa: 1
+    });
+  }
+
+  /* movimiento */
+  const limite = bocaY() + caraR() * 0.5;     // más abajo que la cara: nunca la tapan
+  for(const c of G.capsulas){
+    if(!c.viva){ c.alfa -= dt / 190; continue; }   // las muertas se quedan y se apagan
+    c.y += c.vy * dt;
+    c.giro += c.vgiro * dt;
+
+    /* llegó al límite sin ser tocada */
+    if(c.y < limite){
+      c.y = limite;
+      c.viva = false;
+      if(!dosisCompleta()) error(c.x, limite, "¡Faltó dosis!");
+      /* si la dosis ya estaba completa, dejarla pasar es lo correcto */
+      else { G.pts += 2; flotante(c.x, limite - 8, "+2", "#9fb9c8"); }
+    }
+  }
+  G.capsulas = G.capsulas.filter(c => c.alfa > 0);
+
+  /* partículas */
+  for(const p of G.chispas){
+    p.x += p.vx; p.y += p.vy; p.vy += 0.16; p.vida -= dt / 620;
+  }
+  G.chispas = G.chispas.filter(p => p.vida > 0);
+  for(const f of G.flotantes){ f.y -= dt * 0.035; f.vida -= dt / 1000; }
+  G.flotantes = G.flotantes.filter(f => f.vida > 0);
+
+  if(G.malestar > 0) G.malestar = Math.max(0, G.malestar - dt);
+  if(G.sacudida > 0) G.sacudida = Math.max(0, G.sacudida - dt / 320);
+  if(G.destello > 0) G.destello = Math.max(0, G.destello - dt / 420);
+}
+
+/* ===================== pintado ===================== */
+function pintar(){
+  ctx.save();
+  if(G.sacudida > 0 && !suave){
+    const s = G.sacudida * 9;
+    ctx.translate((Math.random()-0.5)*s, (Math.random()-0.5)*s);
+  }
+
+  /* cielo: se aclara a medida que mejora */
+  const m = G.mejora;
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, mezcla("#0b2b3f", "#15658a", m));
+  g.addColorStop(1, mezcla("#061c29", "#0e3d55", m));
+  ctx.fillStyle = g;
+  ctx.fillRect(-20, -20, W + 40, H + 40);
+
+  /* resplandor inferior, de donde vienen las cápsulas */
+  const gl = ctx.createRadialGradient(W/2, H + 40, 10, W/2, H + 40, H * 0.62);
+  gl.addColorStop(0, "rgba(14,179,166," + (0.16 + m * 0.16).toFixed(3) + ")");
+  gl.addColorStop(1, "rgba(14,179,166,0)");
+  ctx.fillStyle = gl; ctx.fillRect(0, 0, W, H);
+
+  if(G.fase !== "menu"){
+    dibujaCara(W/2, caraY(), caraR(), nivelCara(), G.fase === "jugando" && !dosisCompleta());
+    medidorDosis();
+    for(const c of G.capsulas) dibujaCapsula(c.x, c.y, c.r, c.giro, c.alfa);
+    for(const p of G.chispas){
+      ctx.globalAlpha = Math.max(0, p.vida);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    for(const f of G.flotantes){
+      ctx.globalAlpha = Math.max(0, Math.min(1, f.vida * 1.6));
+      ctx.fillStyle = f.color;
+      ctx.font = "800 17px " + getComputedStyle(document.body).fontFamily;
+      ctx.textAlign = "center";
+      ctx.fillText(f.txt, f.x, f.y);
+    }
+    ctx.globalAlpha = 1;
+    tablero();
+  }
+
+  if(G.destello > 0){
+    ctx.globalAlpha = G.destello * 0.22;
+    ctx.fillStyle = G.destelloColor;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+/* medidor de la dosis en curso: una porción por segmento */
+function medidorDosis(){
+  const n = G.necesita, y = caraY() + caraR() + 26;
+  const an = Math.min(30, (W * 0.7) / n - 8), al = 13, sep = 8;
+  const total = n * an + (n - 1) * sep;
+  let x = W/2 - total/2;
+  for(let i = 0; i < n; i++){
+    const lleno = i < G.tiene;
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(x, y, an, al, al/2);
+    else { ctx.rect(x, y, an, al); }
+    ctx.fillStyle = lleno ? "#12c4b5" : "rgba(255,255,255,.12)";
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = lleno ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.2)";
+    ctx.stroke();
+    x += an + sep;
+  }
+  ctx.textAlign = "center";
+  ctx.font = "700 12.5px " + getComputedStyle(document.body).fontFamily;
+  ctx.fillStyle = dosisCompleta() ? "#2fd48f" : "#9fb9c8";
+  ctx.fillText(dosisCompleta() ? "Dosis completa — déjalas pasar"
+                               : "Dosis " + G.tiene + " de " + n, W/2, y + al + 19);
+}
+
+/* El marcador vive en HTML, no en el lienzo: texto más nítido y sin
+   enredos de alineación. Se refresca solo cuando algún valor cambia. */
+const CORAZON = `<svg viewBox="0 0 24 24" aria-hidden="true">
+  <path d="M12 20.4S3.6 15.3 3.6 9.6a4.6 4.6 0 018.4-2.6 4.6 4.6 0 018.4 2.6c0 5.7-8.4 10.8-8.4 10.8z"
+    fill="#f0604f" stroke="#ffd2cc" stroke-width="1.1" stroke-linejoin="round"/></svg>`;
+let hudPrev = "";
+function tablero(){
+  const firma = G.pts + "|" + G.vidas + "|" + G.nivel + "|" + G.dosisOk;
+  if(firma === hudPrev) return;
+  hudPrev = firma;
+  $("h-pts").textContent = G.pts;
+  $("h-nivel").textContent = "Nivel " + G.nivel + " · " + G.dosisOk +
+                             (G.dosisOk === 1 ? " dosis" : " dosis");
+  let v = "";
+  for(let i = 0; i < VIDAS; i++)
+    v += CORAZON.replace("<svg ", i < G.vidas ? "<svg " : '<svg class="ida" ');
+  $("h-vidas").innerHTML = v;
+}
+
+function mezcla(a, b, t){
+  const p = h => [parseInt(h.substr(1,2),16), parseInt(h.substr(3,2),16), parseInt(h.substr(5,2),16)];
+  const A = p(a), B = p(b);
+  const c = A.map((v,i) => Math.round(v + (B[i]-v)*t));
+  return "rgb(" + c.join(",") + ")";
+}
+
+/* ===================== toques ===================== */
+function tocar(px, py){
+  if(G.fase !== "jugando") return;
+  /* la cápsula más cercana dentro de un radio generoso (dedo gordo) */
+  let mejor = null, d2mejor = Infinity;
+  for(const c of G.capsulas){
+    if(!c.viva) continue;
+    const dx = c.x - px, dy = c.y - py, d2 = dx*dx + dy*dy;
+    const alcance = (c.r * 2.6) * (c.r * 2.6);
+    if(d2 < alcance && d2 < d2mejor){ mejor = c; d2mejor = d2; }
+  }
+  if(!mejor) return;
+
+  mejor.viva = false;
+  if(dosisCompleta()) error(mejor.x, mejor.y, "¡De más!", true);
+  else acierto(mejor);
+}
+cv.addEventListener("pointerdown", e => { e.preventDefault(); tocar(e.clientX, e.clientY); }, { passive:false });
+
+/* ===================== fases ===================== */
+const $ = id => document.getElementById(id);
+
+function empezar(){
+  G.fase = "jugando";
+  G.pts = 0; G.vidas = VIDAS; G.nivel = 1; G.dosisOk = 0;
+  G.mejora = 0; G.racha = 0; G.mejorRacha = 0;
+  G.capsulas = []; G.chispas = []; G.flotantes = [];
+  G.intervalo = 1500; G.tSpawn = 700; G.pausaDosis = 0;
+  G.sacudida = 0; G.destello = 0; G.malestar = 0;
+  nuevaDosis();
+  hudPrev = "";
+  $("hud").hidden = false;
+  $("c-menu").hidden = true; $("c-fin").hidden = true;
+}
+function terminar(){
+  G.fase = "fin";
+  const nuevo = G.pts > G.record;
+  if(nuevo){ G.record = G.pts; grabarRecord(G.record); }
+  $("fin-pts").textContent = G.pts;
+  $("fin-rec").textContent = G.record;
+  $("fin-nuevo").hidden = !nuevo;
+  $("fin-tit").textContent = G.dosisOk === 0 ? "Se acabó" : "¡Buen trabajo!";
+  $("fin-txt").innerHTML = G.dosisOk === 0
+    ? "No alcanzaste a completar ninguna dosis. Mira la cara: mientras no sonría, hay que seguir."
+    : "Completaste <b>" + G.dosisOk + "</b> dosis" + (G.dosisOk > 1 ? "" : "") +
+      " y llegaste al <b>nivel " + G.nivel + "</b>.<br>Mejor racha: <b>" + G.mejorRacha + "</b>.";
+  $("hud").hidden = true;
+  $("c-fin").hidden = false;
+}
+function alMenu(){
+  G.fase = "menu";
+  G.capsulas = []; G.chispas = []; G.flotantes = [];
+  $("rec-menu").textContent = G.record;
+  $("hud").hidden = true;
+  $("c-fin").hidden = true; $("c-menu").hidden = false;
+}
+
+$("b-jugar").addEventListener("click", empezar);
+$("b-otra").addEventListener("click", empezar);
+$("b-menu").addEventListener("click", alMenu);
+
+/* pausa al salir de la app, para no perder vidas de fondo */
+document.addEventListener("visibilitychange", () => {
+  if(document.hidden && G.fase === "jugando"){ G.fase = "fin"; terminar(); }
+});
+
+/* ===================== arranque ===================== */
+$("rec-menu").textContent = G.record;
+requestAnimationFrame(paso);
+
+if("serviceWorker" in navigator){
+  addEventListener("load", () => { navigator.serviceWorker.register("./sw.js").catch(() => {}); });
+}
+</script>
+</body>
+</html>
