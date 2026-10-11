@@ -67,6 +67,26 @@
   .marc .k{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--tx2);}
   .marc .v{font-size:31px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;}
   .nuevo{color:var(--amb);font-weight:800;font-size:14px;}
+
+  /* botón de pausa, dentro del marcador */
+  .hud .pausa{pointer-events:auto;background:rgba(255,255,255,.1);
+    border:1.5px solid rgba(255,255,255,.22);border-radius:50%;
+    width:38px;height:38px;display:grid;place-items:center;color:var(--tx);
+    padding:0;margin-top:2px;cursor:pointer;transition:transform .14s ease;}
+  .hud .pausa:active{transform:scale(.9);}
+  .hud .pausa svg{width:19px;height:19px;}
+
+  /* tarjeta de instalación en la portada */
+  .inst{display:flex;gap:12px;align-items:flex-start;text-align:left;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
+    border-radius:16px;padding:13px 15px;max-width:330px;width:100%;}
+  .inst[hidden]{display:none!important;}
+  .inst > svg{flex:0 0 auto;width:26px;height:26px;color:var(--tur);margin-top:1px;}
+  .inst .ic{flex:1;min-width:0;}
+  .inst .it{font-weight:700;font-size:14px;margin-bottom:3px;}
+  .inst p{font-size:13px;margin-bottom:10px;max-width:none;}
+  .inst kbd{background:rgba(255,255,255,.14);border-radius:4px;padding:0 5px;
+    font-size:12.5px;font-family:inherit;white-space:nowrap;}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
 </head>
@@ -80,6 +100,10 @@
     <div class="pts" id="h-pts">0</div>
     <div class="et">Puntos</div>
   </div>
+  <button class="pausa" id="b-pausa" aria-label="Pausa">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+      stroke-width="2.2" stroke-linecap="round"><path d="M9 5v14M15 5v14"/></svg>
+  </button>
   <div class="der">
     <div class="vidas" id="h-vidas"></div>
     <div class="et" id="h-nivel">Nivel 1</div>
@@ -102,10 +126,45 @@
         <circle cx="12" cy="12" r="9.2"/>
         <path d="M8.6 10.6a1.7 1.7 0 012.8 0M12.6 10.6a1.7 1.7 0 012.8 0"/>
         <path d="M8 13a5 5 0 008 0"/></svg>
-      <span>Si <b>ya sonr&iacute;e</b>, la dosis est&aacute; completa:<br><b>d&eacute;jala pasar</b>. Tomar de m&aacute;s tambi&eacute;n hace mal.</span></div>
+      <span>Si <b>ya sonr&iacute;e</b>, la dosis est&aacute; completa:<br><b>d&eacute;jala pasar</b>. Tomar de m&aacute;s: <b>&minus;1 vida y &minus;40 puntos</b>.</span></div>
+    <div class="r"><svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
+        <g stroke="#a66bc4" stroke-width="1.8" stroke-linecap="round">
+          <path d="M5 7l2.6 2M19 7l-2.6 2M3.6 13h3M20.4 13h-3M6 19l2.4-2M18 19l-2.4-2"/></g>
+        <circle cx="12" cy="13" r="5.4" fill="#5c2f78" stroke="#2a1038" stroke-width="1.5"/>
+        <g stroke="#e4cdf0" stroke-width="1.5" stroke-linecap="round">
+          <path d="M9.6 10.8l1.6 1M14.4 10.8l-1.6 1"/></g>
+        <circle cx="10.4" cy="13.2" r=".9" fill="#e4cdf0"/>
+        <circle cx="13.6" cy="13.2" r=".9" fill="#e4cdf0"/></svg>
+      <span>Los <b>bichos</b> nunca se tocan.<br>Si los tocas: <b>&minus;1 vida y &minus;25 puntos</b>.</span></div>
+    <div class="r"><svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" fill="#ffc93c" opacity=".22"/>
+        <rect x="8.4" y="4.6" width="7.2" height="14.8" rx="3.6"
+          fill="#ffc93c" stroke="#fff7df" stroke-width="1.4"/>
+        <path d="M12 9.2l.9 1.9 1.9.9-1.9.9-.9 1.9-.9-1.9-1.9-.9 1.9-.9z" fill="#fffdf5"/></svg>
+      <span>La <b>s&uacute;per vitamina</b> dorada siempre conviene:<br>vale <b>100 puntos</b>.</span></div>
   </div>
   <button class="btn" id="b-jugar">Jugar</button>
   <p style="font-size:12.5px;">R&eacute;cord: <b id="rec-menu">0</b></p>
+
+  <div class="inst" id="c-inst" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+      stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M12 7v7"/><path d="M9 11l3 3 3-3"/></svg>
+    <div class="ic">
+      <div class="it">D&eacute;jalo en tu pantalla de inicio</div>
+      <p id="inst-txt">Queda con su &iacute;cono y se abre a pantalla completa, sin internet.</p>
+      <button class="btn sec" id="b-instalar">Instalar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ pausa ============ -->
+<div class="capa" id="c-pausa" hidden>
+  <h2>En pausa</h2>
+  <p>El juego te espera.</p>
+  <button class="btn" id="b-seguir">Seguir jugando</button>
+  <button class="btn sec" id="b-inicio">Volver al inicio</button>
+  <button class="btn sec" id="b-salir" hidden>Salir</button>
 </div>
 
 <!-- ============ fin ============ -->
@@ -279,6 +338,82 @@ function dibujaCapsula(x, y, r, giro, alfa){
   ctx.restore();
 }
 
+/* bicho: nunca hay que tocarlo */
+function dibujaBicho(x, y, r, giro, alfa, t){
+  ctx.save();
+  ctx.globalAlpha = alfa == null ? 1 : alfa;
+  ctx.translate(x, y);
+  ctx.rotate(giro + Math.sin(t / 140) * 0.18);
+
+  /* patitas */
+  ctx.strokeStyle = "#6b3f86"; ctx.lineWidth = Math.max(2, r * 0.17);
+  ctx.lineCap = "round";
+  for(let i = 0; i < 6; i++){
+    const a = Math.PI * (i / 3) + 0.4;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * r * 0.78, Math.sin(a) * r * 0.78);
+    ctx.lineTo(Math.cos(a) * r * 1.38, Math.sin(a) * r * 1.38);
+    ctx.stroke();
+  }
+  /* cuerpo */
+  const g = ctx.createRadialGradient(-r*0.25, -r*0.3, r*0.15, 0, 0, r);
+  g.addColorStop(0, "#a66bc4"); g.addColorStop(1, "#5c2f78");
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(0, 0, r * 0.9, 0, 7); ctx.fill();
+  ctx.lineWidth = Math.max(1.6, r * 0.1); ctx.strokeStyle = "#2a1038";
+  ctx.stroke();
+  /* ojos enojados */
+  ctx.strokeStyle = "#2a1038"; ctx.lineWidth = Math.max(2, r * 0.13);
+  ctx.beginPath();
+  ctx.moveTo(-r*0.46, -r*0.34); ctx.lineTo(-r*0.14, -r*0.16);
+  ctx.moveTo( r*0.46, -r*0.34); ctx.lineTo( r*0.14, -r*0.16);
+  ctx.stroke();
+  ctx.fillStyle = "#2a1038";
+  ctx.beginPath(); ctx.arc(-r*0.28, -r*0.02, r*0.13, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc( r*0.28, -r*0.02, r*0.13, 0, 7); ctx.fill();
+  ctx.restore();
+}
+
+/* súper vitamina: siempre conviene tomarla */
+function dibujaVitamina(x, y, r, giro, alfa, t){
+  ctx.save();
+  ctx.globalAlpha = alfa == null ? 1 : alfa;
+  ctx.translate(x, y);
+
+  /* resplandor que late */
+  const pulso = 1 + Math.sin(t / 160) * 0.12;
+  const halo = ctx.createRadialGradient(0, 0, r * 0.5, 0, 0, r * 2.1 * pulso);
+  halo.addColorStop(0, "rgba(255,206,74,.55)");
+  halo.addColorStop(1, "rgba(255,206,74,0)");
+  ctx.fillStyle = halo;
+  ctx.beginPath(); ctx.arc(0, 0, r * 2.1 * pulso, 0, 7); ctx.fill();
+
+  ctx.rotate(giro + t / 900);
+  /* cápsula dorada */
+  const w = r * 1.2, h = r * 2.1, rr = w / 2;
+  ctx.beginPath();
+  ctx.moveTo(-w/2, -h/2 + rr);
+  ctx.arc(0, -h/2 + rr, rr, Math.PI, 0);
+  ctx.lineTo(w/2, h/2 - rr);
+  ctx.arc(0, h/2 - rr, rr, 0, Math.PI);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(-w/2, -h/2, w/2, h/2);
+  g.addColorStop(0, "#ffe79a"); g.addColorStop(0.5, "#ffc93c"); g.addColorStop(1, "#f59b1b");
+  ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = Math.max(1.8, r * 0.11); ctx.strokeStyle = "#fff7df"; ctx.stroke();
+
+  /* destellito */
+  ctx.fillStyle = "#fffdf5";
+  const s = r * 0.42;
+  ctx.beginPath();
+  ctx.moveTo(0, -s); ctx.quadraticCurveTo(s*0.2, -s*0.2, s, 0);
+  ctx.quadraticCurveTo(s*0.2, s*0.2, 0, s);
+  ctx.quadraticCurveTo(-s*0.2, s*0.2, -s, 0);
+  ctx.quadraticCurveTo(-s*0.2, -s*0.2, 0, -s);
+  ctx.fill();
+  ctx.restore();
+}
+
 /* ===================== partículas y textos ===================== */
 function chispazo(x, y, color, n){
   if(suave) return;
@@ -331,11 +466,18 @@ function acierto(c){
     if(G.dosisOk % 2 === 0) subirNivel();
   }
 }
-function error(x, y, motivo, deMas){
+/* castigo = puntos que se descuentan. Sólo se cobra en los errores por ACCIÓN
+   —tocar un bicho o tomar de más—, no por dejar pasar una dosis. */
+function error(x, y, motivo, deMas, castigo){
   G.vidas--;
   G.racha = 0;
   /* pasarse hace MÁS daño que quedarse corto: la dosis justa es justa por los dos lados */
   G.mejora = Math.max(0, G.mejora - (deMas ? 0.12 : 0.06));
+  if(castigo){
+    const real = Math.min(castigo, G.pts);      // el puntaje nunca baja de cero
+    G.pts -= real;
+    if(real > 0) flotante(x, y + 16, "−" + real, "#f0604f");
+  }
   G.sacudida = 1; G.destello = 1; G.destelloColor = "#f0604f";
   chispazo(x, y, "#f0604f", deMas ? 22 : 16);
   flotante(x, y - 14, motivo, "#f0604f");
@@ -375,15 +517,25 @@ function actualizar(dt){
   G.tSpawn -= dt;
   if(G.tSpawn <= 0){
     G.tSpawn = G.intervalo * (0.78 + Math.random() * 0.5);
-    const r = Math.min(W * 0.065, 27);
+
+    /* qué sale: bicho (nunca tocar), vitamina (siempre buena) o cápsula normal */
+    let tipo = "pill";
+    const d = Math.random();
+    if(d < 0.06 && G.nivel >= 2)              tipo = "vit";    // rara, vale mucho
+    else if(d < 0.28 && G.nivel >= 2)         tipo = "bicho";  // desde el nivel 2
+    else if(d < 0.14 && G.nivel === 1 && G.dosisOk >= 1) tipo = "bicho"; // uno de aviso
+
+    const r = Math.min(W * 0.065, 27) * (tipo === "vit" ? 1.18 : 1);
     const margen = r * 2.4;
     G.capsulas.push({
+      tipo,
       x: margen + Math.random() * (W - margen * 2),
       y: pisoY(),
       r,
-      vy: -(0.105 + G.nivel * 0.011) * (0.9 + Math.random() * 0.25),
+      vy: -(0.105 + G.nivel * 0.011) * (0.9 + Math.random() * 0.25)
+          * (tipo === "vit" ? 1.22 : tipo === "bicho" ? 0.95 : 1),
       giro: (Math.random() - 0.5) * 0.5,
-      vgiro: (Math.random() - 0.5) * 0.0022,
+      vgiro: (Math.random() - 0.5) * (tipo === "bicho" ? 0.004 : 0.0022),
       viva: true, alfa: 1
     });
   }
@@ -399,7 +551,10 @@ function actualizar(dt){
     if(c.y < limite){
       c.y = limite;
       c.viva = false;
-      if(!dosisCompleta()) error(c.x, limite, "¡Faltó dosis!");
+      /* al bicho y a la vitamina no tocarlos no cuesta vidas: sólo se van */
+      if(c.tipo === "bicho"){ G.pts += 1; }
+      else if(c.tipo === "vit"){ flotante(c.x, limite - 8, "se fue", "#9fb9c8"); }
+      else if(!dosisCompleta()) error(c.x, limite, "¡Faltó dosis!");
       /* si la dosis ya estaba completa, dejarla pasar es lo correcto */
       else { G.pts += 2; flotante(c.x, limite - 8, "+2", "#9fb9c8"); }
     }
@@ -444,7 +599,11 @@ function pintar(){
   if(G.fase !== "menu"){
     dibujaCara(W/2, caraY(), caraR(), nivelCara(), G.fase === "jugando" && !dosisCompleta());
     medidorDosis();
-    for(const c of G.capsulas) dibujaCapsula(c.x, c.y, c.r, c.giro, c.alfa);
+    for(const c of G.capsulas){
+      if(c.tipo === "bicho")     dibujaBicho(c.x, c.y, c.r, c.giro, c.alfa, G.t);
+      else if(c.tipo === "vit")  dibujaVitamina(c.x, c.y, c.r, c.giro, c.alfa, G.t);
+      else                       dibujaCapsula(c.x, c.y, c.r, c.giro, c.alfa);
+    }
     for(const p of G.chispas){
       ctx.globalAlpha = Math.max(0, p.vida);
       ctx.fillStyle = p.color;
@@ -536,7 +695,25 @@ function tocar(px, py){
   if(!mejor) return;
 
   mejor.viva = false;
-  if(dosisCompleta()) error(mejor.x, mejor.y, "¡De más!", true);
+
+  if(mejor.tipo === "bicho"){                       // nunca se tocan
+    error(mejor.x, mejor.y, "¡Eso no se toma!", false, 25);
+    return;
+  }
+  if(mejor.tipo === "vit"){                         // siempre conviene
+    G.pts += 100;
+    G.mejora = Math.min(1, G.mejora + 0.05);
+    G.destello = 1; G.destelloColor = "#ffc93c";
+    chispazo(mejor.x, mejor.y, "#ffc93c", 26);
+    flotante(mejor.x, mejor.y - 16, "+100", "#ffc93c");
+    if(G.vidas === 1){                              // rescate cuando va al borde
+      G.vidas++;
+      flotante(W/2, H * 0.5, "¡Recuperas una vida!", "#2fd48f");
+    }
+    vibrar([20, 40, 20]);
+    return;
+  }
+  if(dosisCompleta()) error(mejor.x, mejor.y, "¡De más!", true, 40);
   else acierto(mejor);
 }
 cv.addEventListener("pointerdown", e => { e.preventDefault(); tocar(e.clientX, e.clientY); }, { passive:false });
@@ -554,7 +731,7 @@ function empezar(){
   nuevaDosis();
   hudPrev = "";
   $("hud").hidden = false;
-  $("c-menu").hidden = true; $("c-fin").hidden = true;
+  $("c-menu").hidden = true; $("c-fin").hidden = true; $("c-pausa").hidden = true;
 }
 function terminar(){
   G.fase = "fin";
@@ -576,20 +753,94 @@ function alMenu(){
   G.capsulas = []; G.chispas = []; G.flotantes = [];
   $("rec-menu").textContent = G.record;
   $("hud").hidden = true;
+  $("c-pausa").hidden = true;
   $("c-fin").hidden = true; $("c-menu").hidden = false;
+  pintarInstalar();
+}
+
+/* ===================== pausa ===================== */
+function pausar(){
+  if(G.fase !== "jugando") return;
+  G.fase = "pausa";
+  $("b-salir").hidden = !puedeSalir();
+  $("c-pausa").hidden = false;
+}
+function seguir(){
+  if(G.fase !== "pausa") return;
+  G.fase = "jugando";
+  ultimo = 0;                      // que no cuente el rato en pausa como un salto
+  $("c-pausa").hidden = true;
+}
+
+/* ===================== instalar / salir ===================== */
+let promptInstalar = null;
+const instalada = () =>
+  matchMedia("(display-mode: standalone)").matches ||
+  matchMedia("(display-mode: fullscreen)").matches ||
+  navigator.standalone === true;
+const esIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+/* Cerrarse a sí misma sólo tiene sentido instalada: en una pestaña normal
+   window.close() queda bloqueado y el botón no haría nada. */
+const puedeSalir = () => instalada();
+
+addEventListener("beforeinstallprompt", e => {
+  e.preventDefault(); promptInstalar = e; pintarInstalar();
+});
+addEventListener("appinstalled", () => { promptInstalar = null; pintarInstalar(); });
+
+function pintarInstalar(){
+  const caja = $("c-inst");
+  if(instalada()){ caja.hidden = true; return; }
+  if(promptInstalar){
+    caja.hidden = false;
+    $("inst-txt").textContent = "Queda con su ícono y se abre a pantalla completa, sin internet.";
+    $("b-instalar").hidden = false;
+    return;
+  }
+  if(esIOS()){
+    caja.hidden = false;
+    $("inst-txt").innerHTML = "En Safari: <kbd>Compartir</kbd> &rarr; <kbd>Agregar a inicio</kbd>.";
+    $("b-instalar").hidden = true;
+    return;
+  }
+  caja.hidden = true;
 }
 
 $("b-jugar").addEventListener("click", empezar);
 $("b-otra").addEventListener("click", empezar);
 $("b-menu").addEventListener("click", alMenu);
+$("b-pausa").addEventListener("click", pausar);
+$("b-seguir").addEventListener("click", seguir);
+$("b-inicio").addEventListener("click", alMenu);
 
-/* pausa al salir de la app, para no perder vidas de fondo */
+$("b-instalar").addEventListener("click", async () => {
+  if(!promptInstalar) return;
+  promptInstalar.prompt();
+  await promptInstalar.userChoice;
+  promptInstalar = null;
+  pintarInstalar();
+});
+
+$("b-salir").addEventListener("click", () => {
+  /* Instalada, cerrarse suele funcionar. Si el navegador lo bloquea no pasa
+     nada visible, así que avisamos qué hacer en vez de dejarlo en el aire. */
+  window.close();
+  setTimeout(() => {
+    $("b-salir").textContent = "Cierra con el botón del teléfono";
+    $("b-salir").disabled = true;
+  }, 400);
+});
+
+/* al salir de la app el juego se PAUSA, no se pierde */
 document.addEventListener("visibilitychange", () => {
-  if(document.hidden && G.fase === "jugando"){ G.fase = "fin"; terminar(); }
+  if(document.hidden && G.fase === "jugando") pausar();
 });
 
 /* ===================== arranque ===================== */
 $("rec-menu").textContent = G.record;
+pintarInstalar();
 requestAnimationFrame(paso);
 
 if("serviceWorker" in navigator){
