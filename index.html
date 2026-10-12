@@ -154,7 +154,7 @@
   <h1>Hasta Sonre&iacute;r</h1>
   <p>La cara te dice c&oacute;mo va la dosis.<br><b>Compl&eacute;tala para mejorar.</b></p>
   <div class="secs">
-    <span><b>1</b> Atrapa</span><span><b>2</b> Elige</span><span><b>3</b> Ataja</span>
+    <span><b>1</b> Atrapa</span><span><b>2</b> S&iacute;guela</span><span><b>3</b> Ataja</span>
   </div>
   <div class="regla">
     <div class="r"><svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"
@@ -702,19 +702,40 @@ function seguirAviso(){
 }
 
 function entraEscalera(){
-  aviso(2, "Elige",
-    "Una de las tres cajitas esconde la <b>carita feliz</b>.<br>Acierta y subes; el premio crece.",
+  aviso(2, "Síguela",
+    "Vas a ver <b>dónde está la carita feliz</b>. Después las cajitas se cierran y se mezclan: no la pierdas de vista.",
     `<b>En cualquier momento puedes retirarte</b> y llevarte lo acumulado.<br>
      <span class="no">Si fallas</span> pierdes la bolsa, una vida y 60 puntos, y vuelves a atrapar.`,
     () => {
       G.seccion = 2;
-      G.esc = { fila: 0, bolsa: 0, cajas: nuevaFila(), abierta: -1, premiada: false, espera: 0 };
+      G.esc = { fila: 0, bolsa: 0, cajas: [], abierta: -1, premiada: false, espera: 0,
+                etapa: "", tEtapa: 0, mezcla: [], swap: null };
+      arrancaFila();
       G.capsulas = [];
     });
 }
+/* Las cajitas se reparten en tres ranuras. La buena se muestra, se cierran
+   todas y se intercambian de ranura a la vista: hay que seguirla. */
 function nuevaFila(){
   const buena = Math.floor(Math.random() * 3);
-  return [0,1,2].map(i => ({ buena: i === buena, abierta: false }));
+  return [0,1,2].map(i => ({ buena: i === buena, abierta: true, slot: i,
+                             x: escCajaX(i), dy: 0, giro: 0 }));
+}
+
+/* arma la lista de intercambios de la fila: más y más rápidos al subir */
+function armaMezcla(fila){
+  const n = 4 + fila + Math.min(3, Math.floor(G.nivel / 2));      // 4 a 12
+  const dur = Math.max(190, 430 - fila * 32 - G.nivel * 10);
+  const lista = [];
+  let ult = -1;
+  for(let k = 0; k < n; k++){
+    let a, b;
+    do { a = Math.floor(Math.random()*3); b = Math.floor(Math.random()*3); }
+    while(a === b || (a + b) === ult);      // que no repita el mismo par seguido
+    ult = a + b;
+    lista.push({ a, b, dur });
+  }
+  return lista;
 }
 
 /* geometría de la escalera */
@@ -726,15 +747,15 @@ function escCajaX(i){ const w = escCajaW(), g = w * 0.18; return W/2 + (i - 1) *
 function tocaEscalera(px, py){
   const e = G.esc;
   if(e.espera > 0 || e.abierta >= 0) return;
+  if(e.etapa !== "elige") return;          // mientras giran no se puede elegir
 
   /* ¿tocó el botón de retirarse? */
   if(e.fila > 0 && dentro(px, py, btnRetiro())){ retirarse(); return; }
 
   const y = escFilaY(), h = escCajaH(), w = escCajaW();
-  for(let i = 0; i < 3; i++){
-    const x = escCajaX(i);
-    if(px >= x && px <= x + w && py >= y && py <= y + h){
-      abrirCaja(i);
+  for(const c of e.cajas){
+    if(px >= c.x && px <= c.x + w && py >= y && py <= y + h){
+      abrirCaja(c);
       return;
     }
   }
@@ -745,12 +766,13 @@ function btnRetiro(){
 }
 const dentro = (px, py, r) => px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
 
-function abrirCaja(i){
+function abrirCaja(caja){
   const e = G.esc;
+  const i = caja.slot;
   e.abierta = i;
-  e.cajas[i].abierta = true;
+  caja.abierta = true;
 
-  if(e.cajas[i].buena){
+  if(caja.buena){
     const premio = PREMIOS[e.fila];
     e.bolsa += premio;
     e.premiada = true;
@@ -789,7 +811,7 @@ function avanzaEscalera(){
       entraCaza();
       return;
     }
-    e.cajas = nuevaFila(); e.abierta = -1; e.premiada = false;
+    arrancaFila();
   } else {
     /* falló: pierde la bolsa, una vida y puntos; vuelve a la sección 1 */
     const castigo = Math.min(60, G.pts);
@@ -816,11 +838,81 @@ function volverACapsulas(fallo){
       "Atrapa hasta que la cara <b>sonría</b>. Cuando sonríe, déjalas pasar.", arranca);
 }
 
+/* arranca una fila: las tres abiertas, se ve dónde está, y a mezclar */
+function arrancaFila(){
+  const e = G.esc;
+  e.cajas = nuevaFila();
+  e.abierta = -1; e.premiada = false; e.espera = 0;
+  e.etapa = "muestra";
+  e.tEtapa = 1250;              // tiempo para fijarse
+  e.mezcla = [];
+  e.swap = null;
+}
+
 function actualizaEscalera(dt){
   const e = G.esc;
+
+  /* resultado de la elección */
   if(e.espera > 0){
     e.espera -= dt;
     if(e.espera <= 0) avanzaEscalera();
+    return;
+  }
+
+  if(e.etapa === "muestra"){
+    e.tEtapa -= dt;
+    if(e.tEtapa <= 0){
+      for(const c of e.cajas) c.abierta = false;   // se cierran
+      e.etapa = "cierra"; e.tEtapa = 380;
+    }
+    return;
+  }
+
+  if(e.etapa === "cierra"){
+    e.tEtapa -= dt;
+    if(e.tEtapa <= 0){
+      e.mezcla = armaMezcla(e.fila);
+      e.etapa = "mezcla";
+    }
+    return;
+  }
+
+  if(e.etapa === "mezcla"){
+    /* un intercambio a la vez */
+    if(!e.swap){
+      if(!e.mezcla.length){ e.etapa = "elige"; return; }
+      const s = e.mezcla.shift();
+      const ca = e.cajas.find(c => c.slot === s.a);
+      const cb = e.cajas.find(c => c.slot === s.b);
+      /* si cruzan de un extremo al otro pasan por encima de la del medio:
+         el arco tiene que ser bastante mayor para que no se amontonen */
+      const lejos = Math.abs(s.a - s.b) > 1;
+      e.swap = { ca, cb, xa: escCajaX(s.a), xb: escCajaX(s.b),
+                 sa: s.a, sb: s.b, t: 0, dur: s.dur,
+                 arco: lejos ? 1.15 : 0.45, arriba: Math.random() < 0.5 };
+    }
+    const s = e.swap;
+    s.t += dt;
+    const p = Math.min(1, s.t / s.dur);
+    const q = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2) / 2;   // suave en los extremos
+    s.ca.x = s.xa + (s.xb - s.xa) * q;
+    s.cb.x = s.xb + (s.xa - s.xb) * q;
+    /* una pasa por arriba y la otra por abajo, para que se vea el cruce */
+    const arco = Math.sin(p * Math.PI) * escCajaH() * s.arco;
+    s.ca.dy = s.arriba ? -arco : arco;
+    s.cb.dy = s.arriba ?  arco : -arco;
+    /* además giran sobre sí mismas: una para cada lado */
+    s.ca.giro =  q * Math.PI * 2;
+    s.cb.giro = -q * Math.PI * 2;
+
+    if(p >= 1){
+      s.ca.slot = s.sb; s.cb.slot = s.sa;
+      s.ca.x = escCajaX(s.sb); s.cb.x = escCajaX(s.sa);
+      s.ca.dy = 0; s.cb.dy = 0;
+      s.ca.giro = 0; s.cb.giro = 0;
+      e.swap = null;
+    }
+    return;
   }
 }
 
@@ -833,8 +925,13 @@ function pintaEscalera(){
   ctx.font = "800 21px " + fam();
   ctx.fillText("Fila " + (e.fila + 1) + " de " + FILAS, W/2, H * 0.17);
   ctx.font = "700 13.5px " + fam();
-  ctx.fillStyle = "#9fb9c8";
-  ctx.fillText("¿En cuál está la carita feliz?", W/2, H * 0.17 + 24);
+  const pista = e.etapa === "muestra" ? ["Mira bien dónde está", "#2fd48f"]
+              : e.etapa === "cierra"  ? ["Se cierran…",          "#9fb9c8"]
+              : e.etapa === "mezcla"  ? ["¡Síguela!",            "#ffc93c"]
+              : e.abierta >= 0        ? ["",                     "#9fb9c8"]
+              :                         ["¿En cuál quedó?",      "#eaf4fa"];
+  ctx.fillStyle = pista[1];
+  ctx.fillText(pista[0], W/2, H * 0.17 + 24);
 
   /* escalera de premios, a la izquierda */
   const px = 22, py0 = H * 0.26, paso = 19;
@@ -858,11 +955,12 @@ function pintaEscalera(){
     ctx.fillText("ACUMULADO", W/2, H * 0.34 + 16);
   }
 
-  /* las tres cajitas */
-  for(let i = 0; i < 3; i++) dibujaCajita(escCajaX(i), y, w, h, e.cajas[i], i === e.abierta);
+  /* las tres cajitas, en su posición animada; la que cruza por arriba va última */
+  const orden = [...e.cajas].sort((a, b) => a.dy - b.dy);
+  for(const c of orden) dibujaCajita(c.x, y + c.dy, w, h, c, c.slot === e.abierta, c.giro);
 
-  /* botón de retiro */
-  if(e.fila > 0 && e.espera <= 0 && e.abierta < 0){
+  /* botón de retiro: solo cuando ya se puede elegir */
+  if(e.fila > 0 && e.espera <= 0 && e.abierta < 0 && e.etapa === "elige"){
     const b = btnRetiro();
     ctx.beginPath();
     if(ctx.roundRect) ctx.roundRect(b.x, b.y, b.w, b.h, b.h/2); else ctx.rect(b.x,b.y,b.w,b.h);
@@ -875,9 +973,15 @@ function pintaEscalera(){
 }
 
 /* cajita cerrada / abierta con su cara */
-function dibujaCajita(x, y, w, h, caja, elegida){
+function dibujaCajita(x, y, w, h, caja, elegida, giro){
   const r = 14;
   ctx.save();
+  /* el giro propio se hace rotando alrededor del centro de la cajita */
+  if(giro){
+    ctx.translate(x + w/2, y + h/2);
+    ctx.rotate(giro);
+    ctx.translate(-(x + w/2), -(y + h/2));
+  }
   ctx.beginPath();
   if(ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
 
