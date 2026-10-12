@@ -1,5 +1,5 @@
 /* Hasta Sonreir — service worker: cachea todo para jugar sin internet */
-const CACHE = 'hasta-sonreir-v5';
+const CACHE = 'hasta-sonreir-v6';
 const ASSETS = [
   './',
   './index.html',

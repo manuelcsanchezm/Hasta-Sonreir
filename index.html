@@ -705,11 +705,12 @@ function entraEscalera(){
   aviso(2, "Síguela",
     "Vas a ver <b>dónde está la carita feliz</b>. Después las cajitas se cierran y se mezclan: no la pierdas de vista.",
     `<b>En cualquier momento puedes retirarte</b> y llevarte lo acumulado.<br>
-     <span class="no">Si fallas</span> pierdes la bolsa, una vida y 60 puntos, y vuelves a atrapar.`,
+     <span class="no">Si fallas</span> pierdes la bolsa, una vida y 60 puntos.<br>
+     Pero si ya ganaste <b>al menos una fila</b>, <span class="ok">igual avanzas</span>.`,
     () => {
       G.seccion = 2;
       G.esc = { fila: 0, bolsa: 0, cajas: [], abierta: -1, premiada: false, espera: 0,
-                etapa: "", tEtapa: 0, mezcla: [], swap: null };
+                etapa: "", tEtapa: 0, mezcla: [], swap: null, respiro: 0 };
       arrancaFila();
       G.capsulas = [];
     });
@@ -722,10 +723,12 @@ function nuevaFila(){
                              x: escCajaX(i), dy: 0, giro: 0 }));
 }
 
-/* arma la lista de intercambios de la fila: más y más rápidos al subir */
+/* arma la lista de intercambios de la fila: más y más rápidos al subir.
+   Ojo con los números: si va muy rápido no se puede seguir y vuelve a ser
+   suerte, que era justo el problema que esto venía a resolver. */
 function armaMezcla(fila){
-  const n = 4 + fila + Math.min(3, Math.floor(G.nivel / 2));      // 4 a 12
-  const dur = Math.max(190, 430 - fila * 32 - G.nivel * 10);
+  const n = 3 + fila;                                             // 3 a 8
+  const dur = Math.max(320, 640 - fila * 50 - G.nivel * 8);       // 640 a 320 ms
   const lista = [];
   let ult = -1;
   for(let k = 0; k < n; k++){
@@ -813,14 +816,23 @@ function avanzaEscalera(){
     }
     arrancaFila();
   } else {
-    /* falló: pierde la bolsa, una vida y puntos; vuelve a la sección 1 */
+    /* falló: pierde la bolsa, una vida y puntos */
     const castigo = Math.min(60, G.pts);
+    const logradas = e.fila;              // filas que alcanzó a ganar
     G.pts -= castigo;
     G.vidas--;
     G.racha = 0;
     G.mejora = Math.max(0, G.mejora - 0.1);
     if(G.vidas <= 0){ terminar(); return; }
-    volverACapsulas("Perdiste la bolsa y " + castigo + " puntos.");
+
+    if(logradas > 0){
+      /* ganó al menos una fila: igual avanza a la sección 3 */
+      flotante(W/2, H * 0.3, "Perdiste la bolsa  −" + castigo, "#f0604f");
+      entraCaza();
+    } else {
+      /* falló en la primera: vuelve a atrapar */
+      volverACapsulas("Perdiste la bolsa y " + castigo + " puntos.");
+    }
   }
 }
 
@@ -844,9 +856,10 @@ function arrancaFila(){
   e.cajas = nuevaFila();
   e.abierta = -1; e.premiada = false; e.espera = 0;
   e.etapa = "muestra";
-  e.tEtapa = 1250;              // tiempo para fijarse
+  e.tEtapa = 1700;              // tiempo para fijarse: antes era corto
   e.mezcla = [];
   e.swap = null;
+  e.respiro = 0;
 }
 
 function actualizaEscalera(dt){
@@ -878,6 +891,10 @@ function actualizaEscalera(dt){
   }
 
   if(e.etapa === "mezcla"){
+    /* respiro entre cruce y cruce: el ojo necesita un instante para
+       volver a fijar la cajita. Sin esto se ve como un borrón. */
+    if(e.respiro > 0){ e.respiro -= dt; return; }
+
     /* un intercambio a la vez */
     if(!e.swap){
       if(!e.mezcla.length){ e.etapa = "elige"; return; }
@@ -902,8 +919,8 @@ function actualizaEscalera(dt){
     s.ca.dy = s.arriba ? -arco : arco;
     s.cb.dy = s.arriba ?  arco : -arco;
     /* además giran sobre sí mismas: una para cada lado */
-    s.ca.giro =  q * Math.PI * 2;
-    s.cb.giro = -q * Math.PI * 2;
+    s.ca.giro =  q * Math.PI;
+    s.cb.giro = -q * Math.PI;
 
     if(p >= 1){
       s.ca.slot = s.sb; s.cb.slot = s.sa;
@@ -911,6 +928,7 @@ function actualizaEscalera(dt){
       s.ca.dy = 0; s.cb.dy = 0;
       s.ca.giro = 0; s.cb.giro = 0;
       e.swap = null;
+      e.respiro = 150;
     }
     return;
   }
