@@ -67,6 +67,45 @@
   .marc .k{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--tx2);}
   .marc .v{font-size:31px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;}
   .nuevo{color:var(--amb);font-weight:800;font-size:14px;}
+  /* consejo en pergamino */
+  .pergamino{width:100%;max-width:340px;position:relative;
+    filter:drop-shadow(0 10px 26px rgba(0,0,0,.5));}
+  .pergamino .rollo{height:17px;border-radius:9px;margin:0 -9px;
+    background:linear-gradient(180deg,#c9a267,#8d6a39 55%,#6d4f29);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.45);}
+  .pergamino .rollo.arriba{margin-bottom:-3px;}
+  .pergamino .rollo.abajo{margin-top:-3px;}
+  .pergamino .hoja{background:linear-gradient(160deg,#f7ead0,#eedfbe 60%,#e6d3ab);
+    padding:20px 22px 22px;color:#4a3520;text-align:left;
+    max-height:52vh;overflow-y:auto;
+    box-shadow:inset 0 10px 14px -12px rgba(109,79,41,.5),
+               inset 0 -10px 14px -12px rgba(109,79,41,.5);}
+  .pergamino .hoja{text-align:center;}
+  .pergamino .pgdib{width:74px;height:74px;display:block;margin:2px auto 8px;}
+  .pergamino h3,.pergamino p{text-align:left;}
+  .pergamino .pnum{display:inline-block;background:#8d6a39;color:#f7ead0;
+    font-size:11.5px;font-weight:800;letter-spacing:.5px;
+    padding:3px 10px;border-radius:99px;margin-bottom:9px;}
+  .pergamino h3{font-size:18px;font-weight:800;line-height:1.25;margin-bottom:7px;
+    color:#3c2a16;}
+  .pergamino p{font-size:14.2px;line-height:1.6;color:#5a4328;max-width:none;}
+
+  /* aviso entre secciones */
+  .secnum{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;
+    font-size:28px;font-weight:800;color:#06202e;
+    background:linear-gradient(135deg,var(--tur),var(--nar));
+    box-shadow:0 6px 22px rgba(14,179,166,.4);}
+  .avmarco{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
+    border-radius:16px;padding:12px 16px;max-width:330px;width:100%;
+    font-size:13.5px;line-height:1.5;color:var(--tx2);text-align:left;}
+  .avmarco[hidden]{display:none!important;}
+  .avmarco b{color:var(--tx);}
+  .avmarco .ok{color:var(--ok);} .avmarco .no{color:var(--mal);}
+
+  .secs{display:flex;gap:7px;}
+  .secs span{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
+    border-radius:99px;padding:5px 13px;font-size:12.5px;color:var(--tx2);}
+  .secs b{color:var(--tur);margin-right:4px;}
 
   /* botón de pausa, dentro del marcador */
   .hud .pausa{pointer-events:auto;background:rgba(255,255,255,.1);
@@ -114,6 +153,9 @@
 <div class="capa" id="c-menu">
   <h1>Hasta Sonre&iacute;r</h1>
   <p>La cara te dice c&oacute;mo va la dosis.<br><b>Compl&eacute;tala para mejorar.</b></p>
+  <div class="secs">
+    <span><b>1</b> Atrapa</span><span><b>2</b> Elige</span><span><b>3</b> Ataja</span>
+  </div>
   <div class="regla">
     <div class="r"><svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"
         fill="none" stroke="#f0604f" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -156,6 +198,30 @@
       <button class="btn sec" id="b-instalar">Instalar</button>
     </div>
   </div>
+</div>
+
+<!-- ============ consejo en pergamino ============ -->
+<div class="capa" id="c-consejo" hidden>
+  <div class="pergamino">
+    <div class="rollo arriba"></div>
+    <div class="hoja">
+      <svg class="pgdib" id="pg-dib" viewBox="0 0 48 48" aria-hidden="true"></svg>
+      <div class="pnum" id="pg-num">1</div>
+      <h3 id="pg-tit">Duerme bien, de verdad</h3>
+      <p id="pg-txt"></p>
+    </div>
+    <div class="rollo abajo"></div>
+  </div>
+  <button class="btn" id="b-continuar">Continuar</button>
+</div>
+
+<!-- ============ aviso entre secciones ============ -->
+<div class="capa" id="c-aviso" hidden>
+  <div class="secnum" id="av-num">2</div>
+  <h2 id="av-tit">Elige</h2>
+  <p id="av-txt"></p>
+  <div class="avmarco" id="av-extra" hidden></div>
+  <button class="btn" id="b-vamos">¡Vamos!</button>
 </div>
 
 <!-- ============ pausa ============ -->
@@ -205,6 +271,8 @@ const grabarRecord = v => { try { localStorage.setItem(REC_KEY, String(v)); } ca
 
 const VIDAS = 3;
 const vibrar = ms => { try { if(navigator.vibrate) navigator.vibrate(ms); } catch(_){ } };
+let _fam = "";
+const fam = () => _fam || (_fam = getComputedStyle(document.body).fontFamily);
 const suave  = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ===================== estado ===================== */
@@ -220,8 +288,31 @@ const G = {
   pausaDosis: 0,             // ms de respiro al completar una dosis
   malestar: 0,               // ms que la cara queda descompuesta por tomar de más
   sacudida: 0, destello: 0, destelloColor: "#fff",
-  t: 0
+  t: 0,
+
+  /* --- secciones: 1 cápsulas · 2 escalera · 3 atajar por color --- */
+  seccion: 1,
+
+  /* sección 2 — la escalera */
+  esc: { fila: 0, bolsa: 0, cajas: [], abierta: -1, premiada: false, espera: 0 },
+
+  /* sección 3 — atajar con la cajita */
+  caza: { x: 0, destino: 0, color: null, objetos: [], meta: 10, hechas: 0,
+          tSpawn: 0, arrastrando: false }
 };
+
+/* premio de cada fila de la escalera, de abajo hacia arriba */
+const PREMIOS = [50, 100, 200, 350, 550, 800];
+const FILAS   = PREMIOS.length;
+
+/* colores de la sección 3: la cajita y las píldoras comparten esta paleta */
+const TONOS = [
+  { id:"tur", nombre:"turquesa", c:"#12c4b5", c2:"#0a8f84" },
+  { id:"nar", nombre:"naranja",  c:"#f5821f", c2:"#c25f0c" },
+  { id:"azu", nombre:"azul",     c:"#4c9ee6", c2:"#2a6fae" },
+  { id:"ros", nombre:"rosado",   c:"#ef6f9c", c2:"#bf4571" }
+];
+const tono = id => TONOS.find(t => t.id === id) || TONOS[0];
 
 /* ===================== geometría de la escena ===================== */
 /* la cara vive arriba; las cápsulas suben desde abajo hacia ella */
@@ -464,6 +555,8 @@ function acierto(c){
     vibrar([18, 50, 30]);
     G.pausaDosis = 1100;                      // respiro antes de la siguiente toma
     if(G.dosisOk % 2 === 0) subirNivel();
+    /* cada 3 dosis se abre la escalera */
+    if(G.dosisOk % 3 === 0){ G.pausaDosis = 0; entraEscalera(); }
   }
 }
 /* castigo = puntos que se descuentan. Sólo se cobra en los errores por ACCIÓN
@@ -494,6 +587,509 @@ function subirNivel(){
   flotante(W/2, H * 0.52, "Nivel " + G.nivel, "#f5b23f");
 }
 
+/* =====================================================================
+   SECCIÓN 2 — LA ESCALERA
+   Seis filas de tres cajitas. Una esconde la carita feliz. Si aciertas
+   subes y el premio crece; puedes retirarte con lo acumulado en cualquier
+   momento. Si fallas pierdes la bolsa, una vida y puntos, y vuelves a la
+   sección 1.
+   ===================================================================== */
+/* =====================================================================
+   AVISO ENTRE SECCIONES
+   Congela el juego y explica qué viene. Sin esto el cambio es brusco y
+   nadie alcanza a entender por qué cambió la pantalla.
+   ===================================================================== */
+/* ---------------------------------------------------------------------
+   Consejos de salud mental. Aparecen en pergamino antes del aviso de
+   sección, uno distinto cada vez: se barajan los 12 y recién cuando se
+   acaban se vuelve a barajar, así no se repite ninguno hasta verlos todos.
+   --------------------------------------------------------------------- */
+const CONSEJOS = [
+  { d:`<path d="M31 9a14 14 0 1 0 8 25A16 16 0 0 1 31 9z" fill="#f2c25a" stroke="#8d6a39" stroke-width="2.2" stroke-linejoin="round"/><path d="M13 12l1.4 3.1L17.5 16l-3.1 1.4L13 20.5 11.6 17.4 8.5 16l3.1-1.4z" fill="#f2c25a"/><path d="M15 31l1 2.2 2.2 1-2.2 1-1 2.2-1-2.2-2.2-1 2.2-1z" fill="#f2c25a"/>`,
+    t:"Duerme lo que de verdad necesitas",
+    x:"A tu edad el cuerpo pide entre 8 y 9 horas, y a la misma hora todos los días. Deja el celular lejos de la cama una hora antes. Si duermes mal, al otro día andas de mal genio: no es tu culpa, es el cuerpo." },
+  { d:`<circle cx="30" cy="11" r="4.2" fill="#e4793a"/><path d="M28 17l-6 5 3 6-4 9" stroke="#8d6a39" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M25 28l8 2 3 7" stroke="#8d6a39" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 22l-8 3" stroke="#8d6a39" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M7 40h12M5 34h8" stroke="#e4793a" stroke-width="2.4" stroke-linecap="round"/>`,
+    t:"Mueve el cuerpo todos los días",
+    x:"No necesitas gimnasio. Media hora de caminar rápido, bici, pelota o baile. Moverte baja la ansiedad y sube el ánimo, y funciona incluso cuando no tienes ganas." },
+  { d:`<path d="M5 12h20a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H14l-6 5v-5H5a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3z" fill="#7bbfae" stroke="#8d6a39" stroke-width="2.2" stroke-linejoin="round"/><path d="M43 20H30a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h7l5 4v-4h1a3 3 0 0 0 3-3v-7a3 3 0 0 0-3-3z" fill="#f2c25a" stroke="#8d6a39" stroke-width="2.2" stroke-linejoin="round"/>`,
+    t:"No te encierres",
+    x:"Habla seguido con dos o tres personas que te importen, aunque sea poco rato. Diez minutos con alguien de confianza ayudan más que muchas técnicas. Encerrarse se siente bien al principio y mal después." },
+  { d:`<rect x="13" y="5" width="22" height="38" rx="4" fill="#9ec6e0" stroke="#8d6a39" stroke-width="2.4"/><rect x="16" y="10" width="16" height="25" rx="1.5" fill="#f7ead0"/><circle cx="24" cy="22" r="7.5" fill="none" stroke="#8d6a39" stroke-width="2.2"/><path d="M24 17.5V22l3.2 2.4" stroke="#e4793a" stroke-width="2.4" stroke-linecap="round" fill="none"/><circle cx="24" cy="39" r="1.8" fill="#8d6a39"/>`,
+    t:"Ponles hora a las pantallas",
+    x:"Decide a qué hora entras y a qué hora sales de las redes. El scroll no se acaba nunca, está hecho así a propósito, y mientras más rato pasas, más acelerado quedas." },
+  { d:`<path d="M8 13h14l-2 27a3 3 0 0 1-3 2.6h-4A3 3 0 0 1 10 40z" fill="#9ec6e0" stroke="#8d6a39" stroke-width="2.2" stroke-linejoin="round"/><path d="M9.3 26h11.4" stroke="#8d6a39" stroke-width="1.8" opacity=".5"/><path d="M36 15c5 0 8 4 8 10s-4 17-8 17-3-3-5-3-1 3-5 3-8-11-8-17 3-10 8-10c3 0 3 1.6 5 1.6S33 15 36 15z" fill="#d9584f" stroke="#8d6a39" stroke-width="2.2" stroke-linejoin="round"/><path d="M31 15c0-3 2-5 4-5.6" stroke="#5f8f4e" stroke-width="2.4" stroke-linecap="round" fill="none"/>`,
+    t:"Come y toma agua a sus horas",
+    x:"Saltarse comidas, mucha azúcar y mucha bebida energética te desordenan el ánimo. Comer a sus horas y tomar agua ayuda bastante más de lo que parece." },
+  { d:`<path d="M17 42V27l-4-4a3 3 0 0 1 4-4l3 3V9a2.6 2.6 0 0 1 5 0v9a2.6 2.6 0 0 1 5 0v2a2.6 2.6 0 0 1 5 0v2a2.6 2.6 0 0 1 5 0v10c0 6-4 10-10 10z" fill="#f2c25a" stroke="#8d6a39" stroke-width="2.4" stroke-linejoin="round"/><circle cx="12" cy="13" r="7" fill="#d9584f" stroke="#8d6a39" stroke-width="2"/><path d="M8.5 13h7" stroke="#f7ead0" stroke-width="2.6" stroke-linecap="round"/>`,
+    t:"Aprende a decir que no",
+    x:"No puedes con todo, y tampoco tienes que poder. Decir que no a tiempo te evita terminar agotado, o enojado con los demás por algo que aceptaste tú." },
+  { d:`<rect x="10" y="7" width="28" height="35" rx="3" fill="#f7ead0" stroke="#8d6a39" stroke-width="2.4"/><path d="M17 5v5M31 5v5" stroke="#8d6a39" stroke-width="2.6" stroke-linecap="round"/><path d="M15 18l2.6 2.6L22 16M15 27l2.6 2.6L22 25M15 36l2.6 2.6L22 34" stroke="#5f8f4e" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M26 18h8M26 27h8M26 36h5" stroke="#8d6a39" stroke-width="2" stroke-linecap="round" opacity=".55"/>`,
+    t:"Ten una rutina que tenga sentido",
+    x:"Levántate, ordena tu espacio y ponte una a tres cosas claras para el día. Cuando afuera hay orden, adentro también se ordena un poco." },
+  { d:`<path d="M17 36V12l20-4v22" fill="none" stroke="#8d6a39" stroke-width="2.6" stroke-linejoin="round"/><circle cx="12" cy="36" r="5.2" fill="#c178b8" stroke="#8d6a39" stroke-width="2.2"/><circle cx="32" cy="30" r="5.2" fill="#7bbfae" stroke="#8d6a39" stroke-width="2.2"/><path d="M17 18l20-4" stroke="#8d6a39" stroke-width="2.6"/><path d="M41 9l1.3 2.9L45 13l-2.7 1.1L41 17l-1.3-2.9L37 13l2.7-1.1z" fill="#f2c25a"/>`,
+    t:"Haz algo porque sí",
+    x:"Leer, música, dibujar, cocinar, jugar. Al menos 20 minutos al día solo porque te gusta: no porque sirva para algo, ni para mostrarlo a nadie." },
+  { d:`<path d="M15 12a9 9 0 0 1 17-2 7 7 0 0 1 2 13H16a8 8 0 0 1-1-11z" fill="#f7ead0" stroke="#8d6a39" stroke-width="2.4" stroke-linejoin="round"/><circle cx="13" cy="31" r="3.4" fill="#f7ead0" stroke="#8d6a39" stroke-width="2"/><circle cx="8" cy="39" r="2.4" fill="#f7ead0" stroke="#8d6a39" stroke-width="1.8"/><path d="M21 14.5a3.6 3.6 0 0 1 6.2 2.4c0 2.4-3.1 2.6-3.1 5" stroke="#e4793a" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="24.1" cy="25.6" r="1.6" fill="#e4793a"/>`,
+    t:"Mira tus pensamientos, no les creas todo",
+    x:"«Todo me sale mal» es un pensamiento, no un hecho. Pregúntate dos cosas: ¿qué pruebas tengo de eso? ¿Qué le diría a un amigo que me lo dijera?" },
+  { d:`<circle cx="24" cy="24" r="18" fill="none" stroke="#9ec6e0" stroke-width="2.2" opacity=".75"/><circle cx="24" cy="24" r="12" fill="none" stroke="#7bbfae" stroke-width="2.4" opacity=".9"/><circle cx="24" cy="24" r="6" fill="#7bbfae" stroke="#8d6a39" stroke-width="2"/><path d="M24 6v-3M24 42v3M6 24H3M42 24h3" stroke="#8d6a39" stroke-width="2.2" stroke-linecap="round"/>`,
+    t:"Respira antes de reaccionar",
+    x:"Cuando estés acelerado: inhala contando 4, aguanta 4, suelta contando 6. Tres veces. Suena tonto y funciona, porque el cuerpo se calma antes que la cabeza." },
+  { d:`<path d="M24 41S9 31 9 20.5C9 14.7 13.4 11 18 11c3 0 5 1.6 6 3.3 1-1.7 3-3.3 6-3.3 4.6 0 9 3.7 9 9.5C39 31 24 41 24 41z" fill="#d9584f" stroke="#8d6a39" stroke-width="2.4" stroke-linejoin="round"/><path d="M4 44c0-5 3-8 7-8h3M44 44c0-5-3-8-7-8h-3" stroke="#8d6a39" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M18 20.5a4 4 0 0 1 5-2" stroke="#f7ead0" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+    t:"Pedir ayuda no es exagerar",
+    x:"Ir al psicólogo no es solo para cuando estás muy mal: es mantenimiento, como ir al dentista. Y contarle a un adulto en quien confíes también cuenta como pedir ayuda." },
+  { d:`<circle cx="24" cy="21" r="13" fill="#f2c25a" stroke="#8d6a39" stroke-width="2.4"/><path d="M18.5 18.5a2 2 0 0 1 3.2 0M26.3 18.5a2 2 0 0 1 3.2 0" stroke="#8d6a39" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M18 25a7 7 0 0 0 12 0" stroke="#8d6a39" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M11 30c-4 1-7 5-7 10h40c0-5-3-9-7-10" stroke="#8d6a39" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M38 9s1.6-2.6 3.4-1.6S43 11 39.6 13.4C37 11 36.6 8.6 38 9z" fill="#d9584f"/>`,
+    t:"Trátate como tratarías a un amigo",
+    x:"Háblate como le hablarías a alguien que quieres. Echarte la culpa todo el día cansa muchísimo; ser amable contigo te deja corregir el error y seguir." }
+];
+
+let mazo = [], ultimoConsejo = -1;
+function proximoConsejo(){
+  if(!mazo.length){
+    mazo = CONSEJOS.map((c, i) => i);
+    for(let i = mazo.length - 1; i > 0; i--){        // barajar
+      const j = Math.floor(Math.random() * (i + 1));
+      [mazo[i], mazo[j]] = [mazo[j], mazo[i]];
+    }
+    /* En el empalme entre dos barajas el último de una puede ser el primero
+       de la otra, y se vería repetido. Si pasa, se manda al fondo. */
+    if(mazo[mazo.length - 1] === ultimoConsejo && mazo.length > 1)
+      [mazo[mazo.length - 1], mazo[0]] = [mazo[0], mazo[mazo.length - 1]];
+  }
+  ultimoConsejo = mazo.pop();
+  return ultimoConsejo;
+}
+
+let pendienteAviso = null;
+function mostrarConsejo(){
+  const i = proximoConsejo(), c = CONSEJOS[i];
+  $("pg-dib").innerHTML   = c.d || "";
+  $("pg-num").textContent = "Consejo " + (i + 1) + " de " + CONSEJOS.length;
+  $("pg-tit").textContent = c.t;
+  $("pg-txt").textContent = c.x;
+  $("c-consejo").hidden = false;
+}
+function continuarConsejo(){
+  $("c-consejo").hidden = true;
+  const a = pendienteAviso; pendienteAviso = null;
+  if(a) pintaAviso(a);
+}
+
+let seguirCon = null;
+/* primero el pergamino; el aviso de la sección viene después */
+function aviso(num, titulo, texto, extra, alSeguir){
+  pendienteAviso = { num, titulo, texto, extra, alSeguir };
+  G.fase = "aviso";
+  mostrarConsejo();
+}
+function pintaAviso(a){
+  const { num, titulo, texto, extra, alSeguir } = a;
+  seguirCon = alSeguir;
+  G.fase = "aviso";
+  $("av-num").textContent = num;
+  $("av-tit").textContent = titulo;
+  $("av-txt").innerHTML   = texto;
+  const ex = $("av-extra");
+  if(extra){ ex.innerHTML = extra; ex.hidden = false; } else { ex.hidden = true; }
+  $("c-aviso").hidden = false;
+}
+function seguirAviso(){
+  $("c-aviso").hidden = true;
+  G.fase = "jugando";
+  ultimo = 0;                       // el rato leyendo no cuenta como salto
+  const f = seguirCon; seguirCon = null;
+  if(f) f();
+}
+
+function entraEscalera(){
+  aviso(2, "Elige",
+    "Una de las tres cajitas esconde la <b>carita feliz</b>.<br>Acierta y subes; el premio crece.",
+    `<b>En cualquier momento puedes retirarte</b> y llevarte lo acumulado.<br>
+     <span class="no">Si fallas</span> pierdes la bolsa, una vida y 60 puntos, y vuelves a atrapar.`,
+    () => {
+      G.seccion = 2;
+      G.esc = { fila: 0, bolsa: 0, cajas: nuevaFila(), abierta: -1, premiada: false, espera: 0 };
+      G.capsulas = [];
+    });
+}
+function nuevaFila(){
+  const buena = Math.floor(Math.random() * 3);
+  return [0,1,2].map(i => ({ buena: i === buena, abierta: false }));
+}
+
+/* geometría de la escalera */
+const escCajaW = () => Math.min(W * 0.26, 110);
+const escCajaH = () => escCajaW() * 0.82;
+const escFilaY = () => H * 0.46;
+function escCajaX(i){ const w = escCajaW(), g = w * 0.18; return W/2 + (i - 1) * (w + g) - w/2; }
+
+function tocaEscalera(px, py){
+  const e = G.esc;
+  if(e.espera > 0 || e.abierta >= 0) return;
+
+  /* ¿tocó el botón de retirarse? */
+  if(e.fila > 0 && dentro(px, py, btnRetiro())){ retirarse(); return; }
+
+  const y = escFilaY(), h = escCajaH(), w = escCajaW();
+  for(let i = 0; i < 3; i++){
+    const x = escCajaX(i);
+    if(px >= x && px <= x + w && py >= y && py <= y + h){
+      abrirCaja(i);
+      return;
+    }
+  }
+}
+function btnRetiro(){
+  const w = Math.min(W * 0.62, 260), h = 50;
+  return { x: W/2 - w/2, y: escFilaY() + escCajaH() + 34, w, h };
+}
+const dentro = (px, py, r) => px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
+
+function abrirCaja(i){
+  const e = G.esc;
+  e.abierta = i;
+  e.cajas[i].abierta = true;
+
+  if(e.cajas[i].buena){
+    const premio = PREMIOS[e.fila];
+    e.bolsa += premio;
+    e.premiada = true;
+    e.espera = 950;
+    chispazo(escCajaX(i) + escCajaW()/2, escFilaY() + escCajaH()/2, "#2fd48f", 22);
+    flotante(escCajaX(i) + escCajaW()/2, escFilaY() - 10, "+" + premio, "#2fd48f");
+    vibrar([18, 40, 25]);
+  } else {
+    e.premiada = false;
+    e.espera = 1300;
+    /* se descubre dónde estaba, para que se entienda */
+    for(const c of e.cajas) c.abierta = true;
+    G.sacudida = 1; G.destello = 1; G.destelloColor = "#f0604f";
+    chispazo(escCajaX(i) + escCajaW()/2, escFilaY() + escCajaH()/2, "#f0604f", 20);
+    vibrar([60, 40, 120]);
+  }
+}
+
+function retirarse(){
+  const e = G.esc;
+  G.pts += e.bolsa;
+  G.mejora = Math.min(1, G.mejora + 0.08);
+  flotante(W/2, H * 0.3, "Te llevas " + e.bolsa, "#2fd48f");
+  vibrar([20, 40, 20]);
+  entraCaza();
+}
+
+function avanzaEscalera(){
+  const e = G.esc;
+  if(e.premiada){
+    e.fila++;
+    if(e.fila >= FILAS){          // subió las seis: premio gordo y a la 3
+      G.pts += e.bolsa + 500;
+      flotante(W/2, H * 0.3, "¡Las seis! +" + (e.bolsa + 500), "#ffc93c");
+      G.mejora = Math.min(1, G.mejora + 0.15);
+      entraCaza();
+      return;
+    }
+    e.cajas = nuevaFila(); e.abierta = -1; e.premiada = false;
+  } else {
+    /* falló: pierde la bolsa, una vida y puntos; vuelve a la sección 1 */
+    const castigo = Math.min(60, G.pts);
+    G.pts -= castigo;
+    G.vidas--;
+    G.racha = 0;
+    G.mejora = Math.max(0, G.mejora - 0.1);
+    if(G.vidas <= 0){ terminar(); return; }
+    volverACapsulas("Perdiste la bolsa y " + castigo + " puntos.");
+  }
+}
+
+function volverACapsulas(fallo){
+  const arranca = () => {
+    G.seccion = 1;
+    G.capsulas = []; G.tSpawn = 500;
+    nuevaDosis();
+  };
+  if(fallo)
+    aviso(1, "Atrapa", fallo + "<br>Vuelves a completar dosis.",
+      "Atrapa hasta que la cara <b>sonría</b>. Cuando sonríe, déjalas pasar.", arranca);
+  else
+    aviso(1, "Atrapa", "¡Sección superada!<br>Vuelves a completar dosis, ahora más rápido.",
+      "Atrapa hasta que la cara <b>sonría</b>. Cuando sonríe, déjalas pasar.", arranca);
+}
+
+function actualizaEscalera(dt){
+  const e = G.esc;
+  if(e.espera > 0){
+    e.espera -= dt;
+    if(e.espera <= 0) avanzaEscalera();
+  }
+}
+
+function pintaEscalera(){
+  const e = G.esc, w = escCajaW(), h = escCajaH(), y = escFilaY();
+
+  /* título y premio en juego */
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#eaf4fa";
+  ctx.font = "800 21px " + fam();
+  ctx.fillText("Fila " + (e.fila + 1) + " de " + FILAS, W/2, H * 0.17);
+  ctx.font = "700 13.5px " + fam();
+  ctx.fillStyle = "#9fb9c8";
+  ctx.fillText("¿En cuál está la carita feliz?", W/2, H * 0.17 + 24);
+
+  /* escalera de premios, a la izquierda */
+  const px = 22, py0 = H * 0.26, paso = 19;
+  ctx.textAlign = "left";
+  ctx.font = "700 11.5px " + fam();
+  for(let i = FILAS - 1; i >= 0; i--){
+    const yy = py0 + (FILAS - 1 - i) * paso;
+    const hecha = i < e.fila, actual = i === e.fila;
+    ctx.fillStyle = hecha ? "#2fd48f" : actual ? "#ffc93c" : "#5b7585";
+    ctx.fillText((hecha ? "✓ " : actual ? "▸ " : "   ") + PREMIOS[i], px, yy);
+  }
+
+  /* bolsa acumulada */
+  if(e.bolsa > 0){
+    ctx.textAlign = "center";
+    ctx.font = "800 26px " + fam();
+    ctx.fillStyle = "#ffc93c";
+    ctx.fillText(String(e.bolsa), W/2, H * 0.34);
+    ctx.font = "700 11px " + fam();
+    ctx.fillStyle = "#9fb9c8";
+    ctx.fillText("ACUMULADO", W/2, H * 0.34 + 16);
+  }
+
+  /* las tres cajitas */
+  for(let i = 0; i < 3; i++) dibujaCajita(escCajaX(i), y, w, h, e.cajas[i], i === e.abierta);
+
+  /* botón de retiro */
+  if(e.fila > 0 && e.espera <= 0 && e.abierta < 0){
+    const b = btnRetiro();
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(b.x, b.y, b.w, b.h, b.h/2); else ctx.rect(b.x,b.y,b.w,b.h);
+    ctx.fillStyle = "rgba(47,212,143,.16)"; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = "#2fd48f"; ctx.stroke();
+    ctx.textAlign = "center"; ctx.fillStyle = "#2fd48f";
+    ctx.font = "800 15px " + fam();
+    ctx.fillText("Retirarme con " + e.bolsa, W/2, b.y + b.h/2 + 5.5);
+  }
+}
+
+/* cajita cerrada / abierta con su cara */
+function dibujaCajita(x, y, w, h, caja, elegida){
+  const r = 14;
+  ctx.save();
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+
+  if(!caja.abierta){
+    const g = ctx.createLinearGradient(x, y, x, y + h);
+    g.addColorStop(0, "#1f5f80"); g.addColorStop(1, "#143f57");
+    ctx.fillStyle = g; ctx.fill();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = "#3c8db5"; ctx.stroke();
+    /* tapa y signo de pregunta */
+    ctx.beginPath(); ctx.moveTo(x + 8, y + h * 0.3); ctx.lineTo(x + w - 8, y + h * 0.3);
+    ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,.25)"; ctx.stroke();
+    ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.5)";
+    ctx.font = "800 " + Math.round(h * 0.42) + "px " + fam();
+    ctx.fillText("?", x + w/2, y + h * 0.78);
+  } else {
+    const buena = caja.buena;
+    ctx.fillStyle = buena ? "rgba(47,212,143,.16)" : "rgba(240,96,79,.13)";
+    ctx.fill();
+    ctx.lineWidth = elegida ? 3.5 : 2;
+    ctx.strokeStyle = buena ? "#2fd48f" : "#f0604f";
+    ctx.stroke();
+    dibujaCara(x + w/2, y + h/2, Math.min(w, h) * 0.33, buena ? 4 : 0, false);
+  }
+  ctx.restore();
+}
+
+/* =====================================================================
+   SECCIÓN 3 — ATAJAR POR COLOR
+   ===================================================================== */
+function entraCaza(){
+  const t = TONOS[Math.floor(Math.random() * TONOS.length)];
+  aviso(3, "Ataja",
+    `Tienes una cajita <b style="color:${t.c}">${t.nombre}</b>.<br>
+     <b>Arrástrala con el dedo</b> y ataja solo las píldoras de ese color.`,
+    `<span class="ok">Color correcto</span> +20 &nbsp;·&nbsp;
+     <span class="no">Color distinto</span> −20 &nbsp;·&nbsp;
+     <span class="no">Bicho</span> −1 vida<br>
+     Atrapa <b>10 correctas</b> para terminar la sección.`,
+    () => {
+      G.seccion = 3;
+      G.caza = { x: W/2, destino: W/2, color: t.id, objetos: [],
+                 meta: 10, hechas: 0, tSpawn: 400, arrastrando: false };
+      G.capsulas = [];
+    });
+}
+
+const cajaW  = () => Math.min(W * 0.30, 128);
+const cajaH  = () => cajaW() * 0.62;
+const cajaY  = () => H - cajaH() - 34 - (window.visualViewport ? 0 : 0);
+
+function actualizaCaza(dt){
+  const z = G.caza;
+
+  /* la cajita persigue el dedo con suavidad */
+  z.x += (z.destino - z.x) * Math.min(1, dt / 90);
+  const med = cajaW() / 2;
+  z.x = Math.max(med + 4, Math.min(W - med - 4, z.x));
+
+  /* van cayendo cosas */
+  z.tSpawn -= dt;
+  if(z.tSpawn <= 0){
+    z.tSpawn = Math.max(380, 900 - G.nivel * 35) * (0.8 + Math.random() * 0.5);
+    const esBicho = Math.random() < 0.18;
+    const r = Math.min(W * 0.06, 25);
+    /* la mitad de las píldoras son del color correcto, para que se pueda jugar */
+    const col = Math.random() < 0.5 ? z.color
+              : TONOS[Math.floor(Math.random() * TONOS.length)].id;
+    z.objetos.push({
+      tipo: esBicho ? "bicho" : "pill", color: col,
+      x: r * 2 + Math.random() * (W - r * 4), y: -r * 2, r,
+      vy: (0.17 + G.nivel * 0.012) * (0.85 + Math.random() * 0.3),
+      giro: (Math.random() - 0.5) * 0.6, vgiro: (Math.random() - 0.5) * 0.0025,
+      viva: true, alfa: 1
+    });
+  }
+
+  const bocaY = cajaY(), bx = z.x - cajaW()/2, bw = cajaW();
+  for(const o of z.objetos){
+    if(!o.viva){ o.alfa -= dt / 190; continue; }
+    o.y += o.vy * dt;
+    o.giro += o.vgiro * dt;
+
+    /* ¿cayó dentro de la cajita? */
+    if(o.y + o.r >= bocaY && o.y - o.r <= bocaY + cajaH() * 0.55 &&
+       o.x > bx && o.x < bx + bw){
+      o.viva = false;
+      atrapado(o);
+      /* atrapado() puede cerrar la sección: no seguir procesando */
+      if(G.seccion !== 3 || G.fase !== "jugando") break;
+      continue;
+    }
+    if(o.y - o.r > H + 40){ o.viva = false; o.alfa = 0; }
+  }
+  z.objetos = z.objetos.filter(o => o.alfa > 0);
+}
+
+function atrapado(o){
+  const z = G.caza;
+  if(o.tipo === "bicho"){
+    error(o.x, o.y, "¡Un bicho!", false, 25);
+    return;
+  }
+  if(o.color === z.color){
+    z.hechas++;
+    G.pts += 20;
+    G.racha++;
+    chispazo(o.x, o.y, tono(o.color).c, 16);
+    flotante(o.x, o.y - 14, "+20", "#2fd48f");
+    vibrar(18);
+    if(z.hechas >= z.meta){
+      G.pts += 150;
+      G.mejora = Math.min(1, G.mejora + 0.12);
+      G.destello = 1; G.destelloColor = "#2fd48f";
+      flotante(W/2, H * 0.4, "¡Sección completa!  +150", "#2fd48f");
+      subirNivel();
+      volverACapsulas();
+    }
+  } else {
+    const castigo = Math.min(20, G.pts);
+    G.pts -= castigo;
+    G.racha = 0;
+    G.sacudida = 1;
+    chispazo(o.x, o.y, "#f0604f", 12);
+    flotante(o.x, o.y - 14, "−" + castigo, "#f0604f");
+    vibrar(80);
+  }
+}
+
+function pintaCaza(){
+  const z = G.caza, t = tono(z.color);
+
+  /* encabezado: qué hay que atajar */
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#eaf4fa"; ctx.font = "800 19px " + fam();
+  ctx.fillText("Ataja solo las " + t.nombre, W/2, H * 0.11);
+  ctx.font = "700 12.5px " + fam(); ctx.fillStyle = "#9fb9c8";
+  ctx.fillText("Las de otro color descuentan. Los bichos, peor.", W/2, H * 0.11 + 21);
+
+  /* avance */
+  const bw = Math.min(W * 0.6, 240), bx = W/2 - bw/2, by = H * 0.11 + 36, bh = 9;
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(bx, by, bw, bh, bh/2); else ctx.rect(bx,by,bw,bh);
+  ctx.fillStyle = "rgba(255,255,255,.12)"; ctx.fill();
+  const prog = Math.min(1, z.hechas / z.meta);
+  if(prog > 0){
+    ctx.beginPath();
+    const ww = Math.max(bh, bw * prog);
+    if(ctx.roundRect) ctx.roundRect(bx, by, ww, bh, bh/2); else ctx.rect(bx,by,ww,bh);
+    ctx.fillStyle = t.c; ctx.fill();
+  }
+  ctx.font = "700 11.5px " + fam(); ctx.fillStyle = "#9fb9c8";
+  ctx.fillText(z.hechas + " de " + z.meta, W/2, by + bh + 15);
+
+  /* objetos cayendo */
+  for(const o of z.objetos){
+    if(o.tipo === "bicho") dibujaBicho(o.x, o.y, o.r, o.giro, o.alfa, G.t);
+    else dibujaPildoraColor(o.x, o.y, o.r, o.giro, o.alfa, o.color);
+  }
+
+  dibujaCajita3(z.x, cajaY(), cajaW(), cajaH(), t);
+}
+
+/* píldora de un color concreto */
+function dibujaPildoraColor(x, y, r, giro, alfa, colId){
+  const t = tono(colId);
+  ctx.save();
+  ctx.globalAlpha = alfa == null ? 1 : alfa;
+  ctx.translate(x, y); ctx.rotate(giro);
+  const w = r * 1.15, h = r * 2.1, rr = w / 2;
+  ctx.beginPath();
+  ctx.moveTo(-w/2, -h/2 + rr);
+  ctx.arc(0, -h/2 + rr, rr, Math.PI, 0);
+  ctx.lineTo(w/2, h/2 - rr);
+  ctx.arc(0, h/2 - rr, rr, 0, Math.PI);
+  ctx.closePath();
+  ctx.save(); ctx.clip();
+  ctx.fillStyle = t.c;  ctx.fillRect(-w, -h, w*2, h);
+  ctx.fillStyle = t.c2; ctx.fillRect(-w,  0, w*2, h);
+  ctx.fillStyle = "rgba(255,255,255,.4)";
+  ctx.beginPath(); ctx.ellipse(-w*0.22, -h*0.2, w*0.1, h*0.22, -0.2, 0, 7); ctx.fill();
+  ctx.restore();
+  ctx.lineWidth = Math.max(1.6, r * 0.1);
+  ctx.strokeStyle = "rgba(255,255,255,.75)"; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-w/2, 0); ctx.lineTo(w/2, 0); ctx.stroke();
+  ctx.restore();
+}
+
+/* la cajita que ataja, con el color que toca */
+function dibujaCajita3(cx, y, w, h, t){
+  const x = cx - w/2;
+  ctx.save();
+  /* resplandor para que se vea de qué color es */
+  const g = ctx.createRadialGradient(cx, y + h/2, w*0.2, cx, y + h/2, w*0.95);
+  g.addColorStop(0, t.c + "55"); g.addColorStop(1, t.c + "00");
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx, y + h/2, w*0.95, 0, 7); ctx.fill();
+
+  /* cuerpo */
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(x, y, w, h, 12); else ctx.rect(x, y, w, h);
+  const lg = ctx.createLinearGradient(x, y, x, y + h);
+  lg.addColorStop(0, t.c); lg.addColorStop(1, t.c2);
+  ctx.fillStyle = lg; ctx.fill();
+  ctx.lineWidth = 3; ctx.strokeStyle = "#fff"; ctx.stroke();
+
+  /* boca abierta arriba */
+  ctx.beginPath();
+  ctx.moveTo(x + 6, y + 2); ctx.lineTo(x + w - 6, y + 2);
+  ctx.lineWidth = 4; ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.stroke();
+  ctx.restore();
+}
+
 /* ===================== bucle ===================== */
 let ultimo = 0;
 function paso(ts){
@@ -507,6 +1103,9 @@ function paso(ts){
 }
 
 function actualizar(dt){
+  if(G.seccion === 2){ actualizaEscalera(dt); pasoComun(dt); return; }
+  if(G.seccion === 3){ actualizaCaza(dt);     pasoComun(dt); return; }
+
   /* respiro entre dosis */
   if(G.pausaDosis > 0){
     G.pausaDosis -= dt;
@@ -561,7 +1160,11 @@ function actualizar(dt){
   }
   G.capsulas = G.capsulas.filter(c => c.alfa > 0);
 
-  /* partículas */
+  pasoComun(dt);
+}
+
+/* lo que corre en las tres secciones: partículas, textos y sacudidas */
+function pasoComun(dt){
   for(const p of G.chispas){
     p.x += p.vx; p.y += p.vy; p.vy += 0.16; p.vida -= dt / 620;
   }
@@ -597,12 +1200,16 @@ function pintar(){
   ctx.fillStyle = gl; ctx.fillRect(0, 0, W, H);
 
   if(G.fase !== "menu"){
-    dibujaCara(W/2, caraY(), caraR(), nivelCara(), G.fase === "jugando" && !dosisCompleta());
-    medidorDosis();
-    for(const c of G.capsulas){
-      if(c.tipo === "bicho")     dibujaBicho(c.x, c.y, c.r, c.giro, c.alfa, G.t);
-      else if(c.tipo === "vit")  dibujaVitamina(c.x, c.y, c.r, c.giro, c.alfa, G.t);
-      else                       dibujaCapsula(c.x, c.y, c.r, c.giro, c.alfa);
+    if(G.seccion === 2)      pintaEscalera();
+    else if(G.seccion === 3) pintaCaza();
+    else {
+      dibujaCara(W/2, caraY(), caraR(), nivelCara(), G.fase === "jugando" && !dosisCompleta());
+      medidorDosis();
+      for(const c of G.capsulas){
+        if(c.tipo === "bicho")     dibujaBicho(c.x, c.y, c.r, c.giro, c.alfa, G.t);
+        else if(c.tipo === "vit")  dibujaVitamina(c.x, c.y, c.r, c.giro, c.alfa, G.t);
+        else                       dibujaCapsula(c.x, c.y, c.r, c.giro, c.alfa);
+      }
     }
     for(const p of G.chispas){
       ctx.globalAlpha = Math.max(0, p.vida);
@@ -684,6 +1291,8 @@ function mezcla(a, b, t){
 /* ===================== toques ===================== */
 function tocar(px, py){
   if(G.fase !== "jugando") return;
+  if(G.seccion === 2){ tocaEscalera(px, py); return; }
+  if(G.seccion === 3){ G.caza.arrastrando = true; G.caza.destino = px; return; }
   /* la cápsula más cercana dentro de un radio generoso (dedo gordo) */
   let mejor = null, d2mejor = Infinity;
   for(const c of G.capsulas){
@@ -717,6 +1326,13 @@ function tocar(px, py){
   else acierto(mejor);
 }
 cv.addEventListener("pointerdown", e => { e.preventDefault(); tocar(e.clientX, e.clientY); }, { passive:false });
+cv.addEventListener("pointermove", e => {
+  if(G.fase === "jugando" && G.seccion === 3 && G.caza.arrastrando){
+    e.preventDefault(); G.caza.destino = e.clientX;
+  }
+}, { passive:false });
+addEventListener("pointerup",     () => { if(G.caza) G.caza.arrastrando = false; });
+addEventListener("pointercancel", () => { if(G.caza) G.caza.arrastrando = false; });
 
 /* ===================== fases ===================== */
 const $ = id => document.getElementById(id);
@@ -728,10 +1344,15 @@ function empezar(){
   G.capsulas = []; G.chispas = []; G.flotantes = [];
   G.intervalo = 1500; G.tSpawn = 700; G.pausaDosis = 0;
   G.sacudida = 0; G.destello = 0; G.malestar = 0;
+  G.seccion = 1;
+  G.esc = { fila:0, bolsa:0, cajas:[], abierta:-1, premiada:false, espera:0 };
+  G.caza = { x:W/2, destino:W/2, color:null, objetos:[], meta:10, hechas:0, tSpawn:0, arrastrando:false };
   nuevaDosis();
   hudPrev = "";
   $("hud").hidden = false;
-  $("c-menu").hidden = true; $("c-fin").hidden = true; $("c-pausa").hidden = true;
+  $("c-menu").hidden = true; $("c-fin").hidden = true;
+  $("c-pausa").hidden = true; $("c-aviso").hidden = true; $("c-consejo").hidden = true;
+  seguirCon = null; pendienteAviso = null;
 }
 function terminar(){
   G.fase = "fin";
@@ -745,7 +1366,7 @@ function terminar(){
     ? "No alcanzaste a completar ninguna dosis. Mira la cara: mientras no sonría, hay que seguir."
     : "Completaste <b>" + G.dosisOk + "</b> dosis" + (G.dosisOk > 1 ? "" : "") +
       " y llegaste al <b>nivel " + G.nivel + "</b>.<br>Mejor racha: <b>" + G.mejorRacha + "</b>.";
-  $("hud").hidden = true;
+  $("hud").hidden = true; $("c-aviso").hidden = true; $("c-consejo").hidden = true;
   $("c-fin").hidden = false;
 }
 function alMenu(){
@@ -753,14 +1374,15 @@ function alMenu(){
   G.capsulas = []; G.chispas = []; G.flotantes = [];
   $("rec-menu").textContent = G.record;
   $("hud").hidden = true;
-  $("c-pausa").hidden = true;
+  $("c-pausa").hidden = true; $("c-aviso").hidden = true; $("c-consejo").hidden = true;
+  seguirCon = null; pendienteAviso = null;
   $("c-fin").hidden = true; $("c-menu").hidden = false;
   pintarInstalar();
 }
 
 /* ===================== pausa ===================== */
 function pausar(){
-  if(G.fase !== "jugando") return;
+  if(G.fase !== "jugando") return;   /* en "aviso" el juego ya está detenido */;
   G.fase = "pausa";
   $("b-salir").hidden = !puedeSalir();
   $("c-pausa").hidden = false;
@@ -812,6 +1434,8 @@ $("b-jugar").addEventListener("click", empezar);
 $("b-otra").addEventListener("click", empezar);
 $("b-menu").addEventListener("click", alMenu);
 $("b-pausa").addEventListener("click", pausar);
+$("b-vamos").addEventListener("click", seguirAviso);
+$("b-continuar").addEventListener("click", continuarConsejo);
 $("b-seguir").addEventListener("click", seguir);
 $("b-inicio").addEventListener("click", alMenu);
 
